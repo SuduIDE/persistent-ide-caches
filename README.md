@@ -97,9 +97,9 @@ While `Full text search` is rather simple feature with trigram index, `Go to cla
 
 #### Evaluation
 We propose to do performace evaluation on some real open source project such as
-- [Intellij IDEA Community] (https://github.com/JetBrains/intellij-community)
-- [Soot analysis framework] (https://github.com/soot-oss/soot)
-- [Appache commons-lang] (https://github.com/apache/commons-lang)
+- [Intellij IDEA Community](https://github.com/JetBrains/intellij-community)
+- [Soot analysis framework](https://github.com/soot-oss/soot)
+- [Appache commons-lang](https://github.com/apache/commons-lang)
 
 Time for 1 naviagation request must be measured an be not more than **20ms** on typical developer machine: *Intel i9 2Hz, 16GB RAM*. In-memory index part must not use more that 1Gb in RAM.
 On-disk and in-memory space required by index must be measured in proportion to corresponding change sizes: `all_changes_in_repository_in_java_files` for full-text-search and `all_class_names` for `Go to file`. 
