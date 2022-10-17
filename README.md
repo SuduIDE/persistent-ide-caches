@@ -27,9 +27,9 @@ Code review in dev-cloud tools like GitHub/GitLab is merely a diff betwen two te
 
 #### Search and navigation through history
 
-`Navigate and search`(https://www.jetbrains.com/help/rider/Navigation_and_Search__Index.html) features are extremely important in contemporary IDEs for code understanding. For example [Go to class](https://www.jetbrains.com/help/rider/Navigation_and_Search__Go_to_Class.html) feature allows you to navigate to any class you want by typing substring of name of class you want to find. 
+[Navigate and search](https://www.jetbrains.com/help/rider/Navigation_and_Search__Index.html) features are extremely important in contemporary IDEs for code understanding. For example [Go to class](https://www.jetbrains.com/help/rider/Navigation_and_Search__Go_to_Class.html) feature allows you to navigate to any class you want by typing substring of name of class you want to find. 
 
-One may think about histotical `Go to class` that will allow to see all classes existed in history. Ranking of such search result is a separate task. Linking of old class name to new class name is also a very interesting topic that allow developer to better understand code modifications, but it's beyond the scope of this research. 
+One may think about *histotical* `Go to class` that will allow to see all classes existed in history. Ranking of such search result is a separate task. Linking of old class name to new class name is also a very interesting topic that allow developer to better understand code modifications, but it's beyond the scope of this research. 
 
 #### And many others
 One may imagine tons of useful features that can be available for code history exploraion as soon as we get indexes for all commit history. Presumably, it can be a breakthrough in code history understanding and history-based code analysis. Indexes are definately the solid foundament for future R&D work.
@@ -64,14 +64,14 @@ graph LR;
 ```
 The is no need to keep indexes for all `code changes` indefinetely. If no feature uses indexes for change, index can be dropped and change can be added to the `active chuck`. Some garbage collection procedure must be proposed by index API. New `active chuck` can be created if user is inactive for 1 minute or performed big refactoring (depends on local history policy).
 
-It seems like [Persistent/Immutable data structures] (https://en.wikipedia.org/wiki/Persistent_data_structure) can solve this task well, but it requires additional research. With *on-disk* and *performance* requirements this tasks becomes challenging.
+It seems like [Persistent/Immutable data structures](https://en.wikipedia.org/wiki/Persistent_data_structure) can solve this task well, but it requires additional research. With *on-disk* and *performance* requirements this tasks becomes challenging.
 
 #### Time / space efficient
 
 You can imagine simple way to solve aforementioned requirements by indexing all source files for each commit (and each code change in working copy). This is extremely inefficient and impractical by following reasons:
-- ** Space required. ** If we have have **N** commits (+ code changes) and index size for each commit is **M** bytes, such index structure consumes ** O(N*M) bytes **
-- ** Rebuild time required. ** If for each change we recalculate index for all files, it will be impactical to wait for developer. Incrementality is required
-- ** Historical features performace. ** Historical `Go to class` feature will be extremely slow for such index organization
+- **Space required.** If we have have **N** commits (+ code changes) and index size for each commit is **M** bytes, such index structure consumes **O(N*M) bytes**
+- **Rebuild time required.** If for each change we recalculate index for all files, it will be impactical to wait for developer. Incrementality is required
+- **Historical features performace.** Historical `Go to class` feature will be extremely slow for such index organization
 
 So we require to organize indexes such way that time to reindex is **O(change_size_in_bytes)** and space consumed must not more than O(change_size_in_bytes * log(all_changes_in_bytes)). Also feature's response time should be not more that O(log(all_changes_in_bytes)). Not only algorithmic complexity but constant factor is very important for performance: log base must be sufficiently big, say 512 instead of 2 (say it's branching factor for B-tree, but it's depends of data structure implementation). Strings must be interned as much as possible to keep space. Though we don't have exact numbers for constant factor, we assume you will try to compress every data structure as much as possible.
 
@@ -93,7 +93,7 @@ What you need to do is:
  - Integrate such index 
  
 #### `Go to class` feature
-While `Full text search` is rather simple feature with trigram index, `Go to class` requires much more research. `Go to class` uses sofisticated ranking among class candidates that matches to user input. For example `**I**nternet**P**rotocol` matches better to `ip` input than `H**ip**py` class. You need to define this ranking by yourself (one way is to study IntellijIDEA sources) and adopt data structure to solve ranking problem with maximum performance. Developed feature must be compared with IntellijIDEA's `Go to class` feature on real solutions. 
+While `Full text search` is rather simple feature with trigram index, `Go to class` requires much more research. `Go to class` uses sofisticated ranking among class candidates that matches to user input. For example  `InternetProtocol` matches better to `ip` input than `Hippy` * class. You need to define this ranking by yourself (one way is to study IntellijIDEA sources) and adopt data structure to solve ranking problem with maximum performance. Developed feature must be compared with IntellijIDEA's `Go to class` on real solutions. 
 
 #### Evaluation
 We propose to do performace evaluation on some real open source project such as
