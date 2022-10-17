@@ -89,8 +89,9 @@ What you need to do is:
  - Discuss your ideas with us to prove you understand scope well and direction of your research is aligned with our needs. Results of such discussions must be stored by you in `Requirements.md` document and validated by us.
  - Propose design in `Design.md` document with prove of your ideas
  - Provide prototype of indexes datastructure
- - Develop prototype for `Go to class` and `Full text search` features in demo product
- - Integrate such index 
+ - Develop prototype for `Go to class` and `Full text search` features in demo product (e.g. VSCode based or IntellijBased)
+ - Integrate such indexes into SuduIDE. Exact integration strategy will be discussed.
+ - Regularly (1 day/week) attend alignment meetings
  
 #### `Go to class` feature
 While `Full text search` is rather simple feature with trigram index, `Go to class` requires much more research. `Go to class` uses sofisticated ranking among class candidates that matches to user input. For example  `InternetProtocol` matches better to `ip` input than `Hippy` * class. You need to define this ranking by yourself (one way is to study IntellijIDEA sources) and adopt data structure to solve ranking problem with maximum performance. Developed feature must be compared with IntellijIDEA's `Go to class` on real solutions. 
