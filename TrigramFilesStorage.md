@@ -26,14 +26,14 @@ Consider two types of operations.
 
 * **Operations with trigram.** 
 
-	Some checkouts can be done after the last change for this trigram. Therefore, we first checkout to the actual version. We now the time of last update in the data structure. Using binary search we find in stack the minimum value of time >= last time in data structure (last important checkout). Then checkout to that version (note, that there weren't any changes later and none of the later checkouts are important). The logic of this operation will be considered in the next part.
+	Some checkouts can be done after the last change for this trigram. Therefore, we first checkout to the actual version. We know the time of last update in the data structure. Using binary search we find in stack the minimum value of time >= last time in data structure (last important checkout). Then checkout to that version (note, that there weren't any changes later and none of the later checkouts are important). The logic of this operation will be considered in the next part.
 * **Checkout.** 
 
 	For new checkout we should update the checkout stack to the actual values. For this purpose we simply pop the checkouts while its version is greater than the version of current checkout.
 
 ## Operations with trigrams
 
-For each trigram we store the list with changes (add file, remove file) with the time of update and the link to the previous change. To get all the information about the trigram we find the last update corresponding to the curent version and then simply takes the previous one while it exists. Adding makes at the end of the list. However, we should always now the last actual change for the trigram. For this purpose the checkout logic should be implemented. First we find the actual version for the trigram as described above.
+For each trigram we store the list with changes (add file, remove file) with the time of update and the link to the previous change. To get all the information about the trigram we find the last update corresponding to the curent version and then simply takes the previous one while it exists. Adding makes at the end of the list. However, we should always know the last actual change for the trigram. For this purpose the checkout logic should be implemented. First we find the actual version for the trigram as described above.
 
 There are two types of logic with different complexity can be implemented. 
 
