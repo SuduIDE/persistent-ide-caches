@@ -5,9 +5,9 @@ import caches.records.Revision;
 
 import java.util.List;
 
-public interface Index<Key, Value> {
+public interface Index<Key, Value> extends ChangeProcessor {
 
-    void processChange(Change change);
+
     Value getValue(Key key, Revision revision);
 
     Revision getCurrentRevision();

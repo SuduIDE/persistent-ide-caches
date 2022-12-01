@@ -2,20 +2,21 @@ package caches.changes;
 
 import caches.records.FilePointer;
 
-public abstract sealed class Change permits AddChange, DeleteChange {
-    private final FilePointer place;
+public abstract sealed class Change permits FileChange, FileHolderChange {
     private final long timestamp;
 
-    public Change(FilePointer place, long timestamp) {
-        this.place = place;
+    public Change(long timestamp) {
         this.timestamp = timestamp;
-    }
-
-    public FilePointer getPlace() {
-        return place;
     }
 
     public long getTimestamp() {
         return timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return "Change{" +
+                "timestamp=" + timestamp +
+                '}';
     }
 }

@@ -8,15 +8,15 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 
-public record TrigramNode(Revision revision, int parent, File file, Action action) {
+public record TrigramNode(Revision revision, int parent, Action action) {
 
-    public static int BYTE_SIZE = 13;
+    public static int BYTE_SIZE = 9;
 
     public static TrigramNode readTrigramNode(RandomAccessFile raf) {
         try {
             return new TrigramNode(new Revision(raf.readInt()),
                     raf.readInt(),
-                    GlobalVariables.filesInProject.get(raf.readInt()),
+//                    GlobalVariables.filesInProject.get(raf.readInt()),
                     raf.readBoolean() ? Action.ADD : Action.DELETE
             );
         } catch (IOException e) {
@@ -28,7 +28,7 @@ public record TrigramNode(Revision revision, int parent, File file, Action actio
         return ByteBuffer.allocate(BYTE_SIZE)
                 .putInt(revision.revision())
                 .putInt(parent)
-                .putInt(GlobalVariables.reverseFilesInProject.get(file))
+//                .putInt(GlobalVariables.reverseFilesInProject.get(file))
                 .put((byte) (action.state ? 1 : 0))
                 .array();
 

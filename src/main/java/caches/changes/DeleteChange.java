@@ -2,15 +2,22 @@ package caches.changes;
 
 import caches.records.FilePointer;
 
-public final class DeleteChange extends Change {
-    private final int deletedString;
+public final class DeleteChange extends FileChange {
+    private final String deletedString;
 
-    public DeleteChange(FilePointer place, long timestamp, int deletedString) {
-        super(place, timestamp);
+    public DeleteChange(long timestamp, FilePointer place, String deletedString) {
+        super(timestamp, place);
         this.deletedString = deletedString;
     }
 
-    public int getDeletedString() {
+    public String getDeletedString() {
         return deletedString;
+    }
+
+    @Override
+    public String toString() {
+        return "DeleteChange{" +
+                "deletedString='" + deletedString + '\'' +
+                "} " + super.toString();
     }
 }

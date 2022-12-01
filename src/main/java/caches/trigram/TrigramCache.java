@@ -12,7 +12,8 @@ import static caches.trigram.TrigramNode.BYTE_SIZE;
 
 public class TrigramCache {
     public static final List<CheckoutTime> checkouts = new ArrayList<>();
-    public static void pushNode(File trigramFile, File targetFile, long timestamp, TrigramNode.Action action) throws FileNotFoundException {
+
+    public static void pushNode(File trigramFile, long timestamp, TrigramNode.Action action) throws FileNotFoundException {
         int parent;
         try {
             var size = Files.size(trigramFile.toPath());
@@ -22,15 +23,10 @@ public class TrigramCache {
         }
         var revision = getRevision(timestamp);
         try (FileOutputStream writer = new FileOutputStream(trigramFile, true)) {
-            writer.write(new TrigramNode(revision, parent, targetFile, action).toBytes());
+            writer.write(new TrigramNode(revision, parent, action).toBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
-//        try (var raf = new RandomAccessFile(file, "r")) {
-//        } catch (IOException e) {
-//            throw new RuntimeException("Error with reading nodes");
-//        }
     }
 
     private static Revision getRevision(long timestamp) {
