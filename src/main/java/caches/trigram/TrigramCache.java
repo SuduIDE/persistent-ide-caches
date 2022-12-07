@@ -8,22 +8,24 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
-import static caches.trigram.TrigramNode.BYTE_SIZE;
+import static caches.trigram.TrigramNode.HEADER_BYTE_SIZE;
 
 public class TrigramCache {
     public static final List<CheckoutTime> checkouts = new ArrayList<>();
 
+    // TODO
     public static void pushNode(File trigramFile, long timestamp, TrigramNode.Action action) throws FileNotFoundException {
         int parent;
         try {
             var size = Files.size(trigramFile.toPath());
-            parent = size == 0 ? 0 : (int) ((size - BYTE_SIZE) / BYTE_SIZE);
+            parent = size == 0 ? 0 : (int) ((size - HEADER_BYTE_SIZE) / HEADER_BYTE_SIZE);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
         var revision = getRevision(timestamp);
         try (FileOutputStream writer = new FileOutputStream(trigramFile, true)) {
-            writer.write(new TrigramNode(revision, parent, action).toBytes());
+
+            //            writer.write(new TrigramNode(revision, parent, action).toBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

@@ -7,6 +7,7 @@ import caches.records.Trigram;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Stream;
 
 public class TrigramHistoryIndex implements Index<String, List<Revision>> {
 
@@ -62,7 +63,11 @@ public class TrigramHistoryIndex implements Index<String, List<Revision>> {
     }
 
     @Override
-    public void processChange(Change change) {
+    public void processChanges(List<Change> changes) {
+        changes.forEach(this::processChange);
+    }
+
+    private void processChange(Change change) {
         switch (change) {
             case AddChange addChange:
                 var trigrams = getTrigramsCount(addChange.getAddedString());
@@ -122,52 +127,63 @@ public class TrigramHistoryIndex implements Index<String, List<Revision>> {
 
     }
 
-    class Preparer {
+    private class Preparer {
         private final TrigramCounter counter = new TrigramCounter();
 
         public void process(List<Change> changes) {
-            var addCounter = new TrigramCounter();
-            var deleteCounter = new TrigramCounter();
+            var addCounter = new TrigramFileCounter();
+            var deleteCounter = new TrigramFileCounter();
             changes.forEach(it -> countChange(it, addCounter, deleteCounter));
-            addCounter.getAsMap().forEach((trigram, added) -> {
-                        if (counter.get(trigram) == 0 && added != 0) {
-                            pushNewNode(trigram, changes.get(0).getTimestamp(), TrigramNode.Action.ADD);
-                        }
-                    }
-            );
-            deleteCounter.getAsMap().forEach(((trigram, deleted) -> {
-                if (counter.get(trigram) == deleted && addCounter.get(trigram) == 0) {
-                    pushNewNode(trigram, changes.get(0).getTimestamp(), TrigramNode.Action.DELETE);
-                }
-            }));
-            counter.add(addCounter);
-            counter.decrease(deleteCounter);
-
+            List<TrigramNode.FileAction> fileActions = new ArrayList<>();
+            // TODO
+//            addCounter.getAsMap().forEach((trigram, map) ->
+//            {
+//                map.forEach((file, added) -> {
+//                            if (counter.get(trigram) == 0 && added != 0) {
+//                                fileActions.add(new TrigramNode.FileAction(file, ))
+//                            }
+//                        }
+//                );
+//            });
+//            deleteCounter.getAsMap().forEach(((trigram, deleted) -> {
+//                if (counter.get(trigram) == deleted && addCounter.get(trigram) == 0) {
+//                    pushNewNode(trigram, changes.get(0).getTimestamp(), TrigramNode.Action.DELETE);
+//                }
+//            }));
+//            counter.add(addCounter);
+//            counter.decrease(deleteCounter);
         }
 
-        private void countChange(Change change, TrigramCounter addCounter, TrigramCounter deleteCounter) {
-            if (!(change instanceof FileHolderChange fileHolderChange &&
-                    (fileHolderChange.getNewFileName().getName().endsWith("java") || fileHolderChange.getOldFileName().getName().endsWith("java")) ||
-                    change instanceof FileChange fileChange && (fileChange.getPlace().file().getName().equals("java"))
-            )) {
-                return;
-            }
+        private boolean validateFilename(String filename) {
+            return Stream.of(".java"/*, ".txt", ".kt", ".py"*/).anyMatch(filename::endsWith);
+        }
+
+        private boolean validateChange(Change change) {
+            List<String> filenames = switch (change) {
+                case FileChange fileChange -> List.of(fileChange.getPlace().file().getName());
+                case FileHolderChange fileHolderChange -> List.of(fileHolderChange.getOldFileName().getName(),
+                        fileHolderChange.getNewFileName().getName());
+            };
+            return filenames.stream().anyMatch(this::validateFilename);
+        }
+
+        private void countChange(Change change, TrigramFileCounter addCounter, TrigramFileCounter deleteCounter) {
+            if (!validateChange(change)) return;
             switch (change) {
-                case AddChange addChange:
-                    addCounter.add(getTrigramsCount(addChange.getAddedString()));
-                    return;
-                case ModifyChange modifyChange:
-                    deleteCounter.add(getTrigramsCount(modifyChange.getOldFileContent()));
-                    addCounter.add(getTrigramsCount(modifyChange.getNewFileContent()));
-                    return;
-                case CopyChange copyChange:
-                    addCounter.add(getTrigramsCount(copyChange.getNewFileName()));
-                    break;
-                case RenameChange ignored:
-                    break;
-                case DeleteChange deleteChange:
-                    deleteCounter.add(getTrigramsCount(deleteChange.getDeletedString()));
-                    break;
+                case AddChange addChange ->
+                        addCounter.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));
+                case ModifyChange modifyChange -> {
+                    deleteCounter.add(modifyChange.getOldFileName(), getTrigramsCount(modifyChange.getOldFileContent()));
+                    addCounter.add(modifyChange.getNewFileName(), getTrigramsCount(modifyChange.getNewFileContent()));
+                }
+                case CopyChange copyChange ->
+                        addCounter.add(copyChange.getNewFileName(), getTrigramsCount(copyChange.getNewFileName()));
+                case RenameChange renameChange -> {
+                    deleteCounter.add(renameChange.getOldFileName(), getTrigramsCount(renameChange.getOldFileContent()));
+                    addCounter.add(renameChange.getNewFileName(), getTrigramsCount(renameChange.getNewFileContent()));
+                }
+                case DeleteChange deleteChange ->
+                        deleteCounter.add(deleteChange.getPlace().file(), getTrigramsCount(deleteChange.getDeletedString()));
             }
         }
     }

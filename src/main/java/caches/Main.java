@@ -2,6 +2,7 @@ package caches;
 
 
 import caches.changes.Change;
+import caches.changes.ModifyChange;
 import caches.records.Revision;
 import caches.trigram.TrigramHistoryIndex;
 import org.eclipse.jgit.api.Git;
@@ -13,6 +14,7 @@ import java.util.List;
 
 public class Main {
     public static void main(String[] args) throws IOException, GitAPIException {
+        long start = System.currentTimeMillis();
         if (args.length < 1) {
             throw new RuntimeException("Needs path to repository as first arg");
         }
@@ -43,15 +45,18 @@ public class Main {
             }
 
             @Override
-            public void processChange(Change change) {
+            public void processChanges(List<Change> changes) {
 
             }
+
+
         };
         try (Git git = Git.open(new File(args[0]))) {
-            var parser = new GitParser(git, List.of(/*echoIndex,*/ new TrigramHistoryIndex()));
+            var parser = new GitParser(git, List.of(/*echoIndex, */ new TrigramHistoryIndex()));
             parser.parse();
         } catch (IOException ioException) {
             throw new RuntimeException(ioException);
         }
+        System.out.println(System.currentTimeMillis() - start);
     }
 }
