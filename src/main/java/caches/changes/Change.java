@@ -1,7 +1,5 @@
 package caches.changes;
 
-import caches.records.FilePointer;
-
 public abstract sealed class Change permits FileChange, FileHolderChange {
     private final long timestamp;
 

@@ -1,3 +1,4 @@
 package caches.records;
 
-public record Revision(int revision) {}
+public record Revision(int revision) {
+}

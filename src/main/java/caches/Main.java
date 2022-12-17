@@ -2,7 +2,6 @@ package caches;
 
 
 import caches.changes.Change;
-import caches.changes.ModifyChange;
 import caches.records.Revision;
 import caches.trigram.TrigramHistoryIndex;
 import org.eclipse.jgit.api.Git;

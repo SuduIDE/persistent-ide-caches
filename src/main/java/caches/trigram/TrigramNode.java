@@ -34,7 +34,7 @@ public record TrigramNode(Revision revision, int parent, List<FileAction> fileAc
 
     byte[] toBytes() {
         var bytes = ByteBuffer.allocate(HEADER_BYTE_SIZE +
-                        fileActions().size() * FileAction.BYTE_SIZE)
+                        fileActions().size() * FileAction.BYTE_SIZE + TAIL_BYTE_SIZE)
                 .putInt(revision.revision())
                 .putInt(parent);
         fileActions.forEach(it -> it.putInBuffer(bytes));

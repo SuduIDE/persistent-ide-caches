@@ -64,26 +64,32 @@ public class TrigramHistoryIndex implements Index<String, List<Revision>> {
 
     @Override
     public void processChanges(List<Change> changes) {
-        changes.forEach(this::processChange);
-    }
-
-    private void processChange(Change change) {
-        switch (change) {
-            case AddChange addChange:
-                var trigrams = getTrigramsCount(addChange.getAddedString());
-                trigrams.decrease(getTrigramsCount(addChange.getPlace().file()));
-                trigrams.getAsMap().entrySet().stream()
-                        .filter((entry) -> entry.getValue() == 0)
-                        .forEach((entry) -> {
-                            pushNewNode(entry.getKey(), change.getTimestamp(), TrigramNode.Action.ADD);
-                        });
-                break;
-            default:
-                throw new IllegalStateException("Unexpected value: " + change);
+        Map<Trigram, List<TrigramNode.FileAction>> actions = new HashMap<>();
+        changes.forEach(it -> processChange(it, actions));
+        if (!actions.isEmpty()) {
+            pushActions(actions, changes.get(0).getTimestamp());
         }
     }
 
-    private void pushNewNode(Trigram trigram, long timestamp, TrigramNode.Action action) {
+    private void processChange(Change change, Map<Trigram, List<TrigramNode.FileAction>> actions) {
+        if (Objects.requireNonNull(change) instanceof AddChange addChange) {
+            var trigrams = getTrigramsCount(addChange.getAddedString());
+            trigrams.decrease(getTrigramsCount(addChange.getPlace().file()));
+            trigrams.getAsMap().entrySet().stream()
+                    .filter((entry) -> entry.getValue() == 0)
+                    .forEach((entry) -> actions.computeIfAbsent(entry.getKey(), (ignore) -> new ArrayList<>()).add(
+                            new TrigramNode.FileAction(addChange.getPlace().file(), TrigramNode.Action.ADD)
+                    ));
+        } else {
+            throw new IllegalStateException("Unexpected value: " + change);
+        }
+    }
+
+    private void pushActions(Map<Trigram, List<TrigramNode.FileAction>> actions, long timestamp) {
+        actions.forEach((trigram, fileActions) -> pushNewNode(trigram, timestamp, fileActions));
+    }
+
+    private void pushNewNode(Trigram trigram, long timestamp, List<TrigramNode.FileAction> actions) {
         try {
             if (!trigramsFiles.containsKey(trigram)) {
                 var file = generateFileName(trigram);
@@ -94,8 +100,7 @@ public class TrigramHistoryIndex implements Index<String, List<Revision>> {
                 }
                 trigramsFiles.put(trigram, file);
             }
-            TrigramCache.pushNode(trigramsFiles.get(trigram), timestamp,
-                    action);
+            TrigramCache.pushNode(trigramsFiles.get(trigram), timestamp, actions);
         } catch (FileNotFoundException e) {
             throw new RuntimeException("Not found file" + trigramsFiles.get(trigram), e);
         }
@@ -128,33 +133,38 @@ public class TrigramHistoryIndex implements Index<String, List<Revision>> {
     }
 
     private class Preparer {
-        private final TrigramCounter counter = new TrigramCounter();
+        private final TrigramFileCounter counter = new TrigramFileCounter();
 
         public void process(List<Change> changes) {
             var addCounter = new TrigramFileCounter();
             var deleteCounter = new TrigramFileCounter();
             changes.forEach(it -> countChange(it, addCounter, deleteCounter));
-            List<TrigramNode.FileAction> fileActions = new ArrayList<>();
-            // TODO
-//            addCounter.getAsMap().forEach((trigram, map) ->
-//            {
-//                map.forEach((file, added) -> {
-//                            if (counter.get(trigram) == 0 && added != 0) {
-//                                fileActions.add(new TrigramNode.FileAction(file, ))
-//                            }
-//                        }
-//                );
-//            });
-//            deleteCounter.getAsMap().forEach(((trigram, deleted) -> {
-//                if (counter.get(trigram) == deleted && addCounter.get(trigram) == 0) {
-//                    pushNewNode(trigram, changes.get(0).getTimestamp(), TrigramNode.Action.DELETE);
-//                }
-//            }));
-//            counter.add(addCounter);
-//            counter.decrease(deleteCounter);
+            Map<Trigram, List<TrigramNode.FileAction>> actions = new HashMap<>();
+            addCounter.forEach((it) -> {
+                if (counter.get(it.trigram(), it.file()) == 0 && it.value() != 0) {
+                    actions.computeIfAbsent(it.trigram(), (ignore) -> new ArrayList<>()).add(
+                            new TrigramNode.FileAction(it.file(), TrigramNode.Action.ADD)
+                    );
+                }
+            });
+            deleteCounter.forEach((it) -> {
+                if (counter.get(it.trigram(), it.file()) == it.value() && addCounter.get(it.trigram(), it.file()) == 0) {
+                    actions.computeIfAbsent(it.trigram(), (ignore) -> new ArrayList<>()).add(
+                            new TrigramNode.FileAction(it.file(), TrigramNode.Action.DELETE)
+                    );
+                }
+            });
+            counter.add(addCounter);
+            counter.decrease(deleteCounter);
+            if (!actions.isEmpty()) {
+                pushActions(actions, changes.get(0).getTimestamp());
+            }
         }
 
         private boolean validateFilename(String filename) {
+//            if (filename.endsWith("java")) {
+//                return true;
+//            }
             return Stream.of(".java"/*, ".txt", ".kt", ".py"*/).anyMatch(filename::endsWith);
         }
 

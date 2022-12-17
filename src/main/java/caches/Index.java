@@ -1,6 +1,5 @@
 package caches;
 
-import caches.changes.Change;
 import caches.records.Revision;
 
 import java.util.List;

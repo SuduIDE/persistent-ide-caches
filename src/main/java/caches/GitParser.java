@@ -5,11 +5,13 @@ import caches.records.FilePointer;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
-import org.eclipse.jgit.lib.*;
+import org.eclipse.jgit.lib.AbbreviatedObjectId;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
-import org.eclipse.jgit.treewalk.filter.TreeFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +23,8 @@ import java.util.Deque;
 import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static caches.GlobalVariables.tryRegisterNewFile;
 
 public class GitParser {
 
@@ -52,9 +56,10 @@ public class GitParser {
             parseFirstCommit(firstCommit);
             var prevCommit = firstCommit;
             while (!commits.isEmpty()) {
-                if (commits.size() % 100 == 0) {
+                if (commits.size() % 1000 == 0) {
                     LOG.info(String.format("Remaining %d commits", commits.size()));
                     System.out.printf("Remaining %d commits%n", commits.size());
+                    break;
                 }
                 var commit = commits.removeLast();
                 parseCommit(commit, prevCommit);
@@ -67,7 +72,20 @@ public class GitParser {
         }
     }
 
+
+
     void sendChanges(List<Change> changes) {
+        changes.forEach(it -> {
+            switch (it) {
+                case FileChange fileChange -> {
+                    tryRegisterNewFile(fileChange.getPlace().file());
+                }
+                case FileHolderChange fileHolderChange -> {
+                    tryRegisterNewFile(fileHolderChange.getOldFileName());
+                    tryRegisterNewFile(fileHolderChange.getNewFileName());
+                }
+            }
+        });
         indexes.forEach(it -> it.prepare(changes));
     }
 
@@ -75,6 +93,7 @@ public class GitParser {
         try (var tw = new TreeWalk(repository)) {
             tw.addTree(prevCommit.getTree());
             tw.addTree(commit.getTree());
+            tw.setRecursive(true);
             var rawChanges = DiffEntry.scan(tw);
             sendChanges(rawChanges.stream()
                     .map(it -> {
@@ -137,6 +156,7 @@ public class GitParser {
         List<Change> changes = new ArrayList<>();
         try (TreeWalk treeWalk = new TreeWalk(repository)) {
             treeWalk.addTree(first.getTree());
+            treeWalk.setRecursive(true);
             while (treeWalk.next()) {
                 changes.add(new AddChange(System.currentTimeMillis(),
                         new FilePointer(new File(treeWalk.getPathString()), 0),

@@ -4,7 +4,6 @@ import caches.records.Trigram;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class TrigramCounter {
     private final Map<Trigram, Integer> counter;
