@@ -23,7 +23,7 @@ public class TrigramFileCounter {
 
     public void add(Trigram trigram, File file, int value) {
         counter.computeIfAbsent(trigram, ignore -> new HashMap<>())
-                .compute(file, (k, v) -> v == null ? value : Math.max(v + value, 0));
+                .compute(file, (k, v) -> v == null ? value : v + value);
     }
 
     public void add(TrigramFileInteger it) {
@@ -31,7 +31,7 @@ public class TrigramFileCounter {
     }
 
     public void add(File file, TrigramCounter other) {
-        other.getAsMap().forEach((trigram, value) -> add(trigram, file, value));
+        other.forEach((trigram, value) -> add(trigram, file, value));
     }
 
     public void add(TrigramFileCounter other) {
@@ -66,5 +66,11 @@ public class TrigramFileCounter {
 
     public int get(Trigram trigram, File file) {
         return counter.getOrDefault(trigram, Collections.emptyMap()).getOrDefault(file, 0);
+    }
+
+    public TrigramFileCounter copy() {
+        var result = new TrigramFileCounter();
+        forEach(it -> result.add(it.trigram(), it.file(), it.value()));
+        return result;
     }
 }

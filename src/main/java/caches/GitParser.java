@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static caches.GlobalVariables.tryRegisterNewFile;
+import static caches.GlobalVariables.*;
 
 public class GitParser {
 
@@ -75,6 +75,7 @@ public class GitParser {
 
 
     void sendChanges(List<Change> changes) {
+        revisions.getAndIncrement();
         changes.forEach(it -> {
             switch (it) {
                 case FileChange fileChange -> {
@@ -87,6 +88,7 @@ public class GitParser {
             }
         });
         indexes.forEach(it -> it.prepare(changes));
+        currentRevision.set(revisions.get());
     }
 
     private void parseCommit(RevCommit commit, RevCommit prevCommit) throws IOException, GitAPIException {

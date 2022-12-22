@@ -8,5 +8,6 @@ public interface ChangeProcessor {
 
     void prepare(List<Change> changes);
 
+
     void processChanges(List<Change> changes);
 }

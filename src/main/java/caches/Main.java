@@ -3,6 +3,7 @@ package caches;
 
 import caches.changes.Change;
 import caches.records.Revision;
+import caches.trigram.TrigramCache;
 import caches.trigram.TrigramHistoryIndex;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -17,20 +18,10 @@ public class Main {
         if (args.length < 1) {
             throw new RuntimeException("Needs path to repository as first arg");
         }
-        new File(TrigramHistoryIndex.DIRECTORY).mkdir();
+        System.out.println(new File(TrigramCache.DIRECTORY).mkdir());
         Index<String, String> echoIndex = new Index<>() {
             @Override
             public String getValue(String s, Revision revision) {
-                return null;
-            }
-
-            @Override
-            public Revision getCurrentRevision() {
-                return null;
-            }
-
-            @Override
-            public List<Revision> getAllRevisions() {
                 return null;
             }
 
@@ -51,7 +42,7 @@ public class Main {
 
         };
         try (Git git = Git.open(new File(args[0]))) {
-            var parser = new GitParser(git, List.of(/*echoIndex, */ new TrigramHistoryIndex()));
+            var parser = new GitParser(git, List.of(echoIndex, new TrigramHistoryIndex()));
             parser.parse();
         } catch (IOException ioException) {
             throw new RuntimeException(ioException);

@@ -4,6 +4,7 @@ import caches.records.Trigram;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 public class TrigramCounter {
     private final Map<Trigram, Integer> counter;
@@ -25,7 +26,7 @@ public class TrigramCounter {
     }
 
     public void add(Trigram key, int value) {
-        counter.compute(key, (k, v) -> v == null ? value : Math.max(v + value, 0));
+        counter.compute(key, (k, v) -> v == null ? value : v + value);
     }
 
     public void decrease(Trigram key, int value) {
@@ -62,6 +63,10 @@ public class TrigramCounter {
 
     public TrigramCounter copy() {
         return new TrigramCounter(new HashMap<>(counter));
+    }
+
+    public void forEach(BiConsumer<Trigram, Integer> function) {
+        counter.forEach(function);
     }
 
 

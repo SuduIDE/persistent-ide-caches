@@ -1,35 +1,54 @@
 package caches.trigram;
 
-import caches.records.CheckoutTime;
+import caches.GlobalVariables;
 import caches.records.Revision;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.util.ArrayList;
+import java.io.RandomAccessFile;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import static caches.trigram.TrigramNode.HEADER_BYTE_SIZE;
 
 public class TrigramCache {
-    public static final List<CheckoutTime> checkouts = new ArrayList<>();
+    public static final String DIRECTORY = ".trigrams/";
+    public static final File DATA_FILE = new File(DIRECTORY + ".data");
 
-    // TODO
-    public static void pushNode(File trigramFile, long timestamp, List<TrigramNode.FileAction> actions) throws FileNotFoundException {
-        int parent = 0;
-        var revision = getRevision(timestamp);
-        try (FileOutputStream writer = new FileOutputStream(trigramFile, true)) {
-            writer.write(new TrigramNode(revision, parent, actions).toBytes());
+    private final Map<Revision, TrigramNode> tree = new HashMap<>();
+
+    public void pushCluster(long timestamp, List<TrigramDataFileCluster.TrigramFileDelta> deltas) {
+        var revision = new Revision(GlobalVariables.revisions.get() == 1 ?
+                GlobalVariables.currentRevision.get() : GlobalVariables.revisions.get());
+        var parent = new Revision(GlobalVariables.currentRevision.get());
+        long size = DATA_FILE.length();
+        tree.put(revision, new TrigramNode(revision, parent, size));
+        try (FileOutputStream writer = new FileOutputStream(DATA_FILE, true)) {
+            writer.write(new TrigramDataFileCluster(revision, parent, deltas).toBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     private static Revision getRevision(long timestamp) {
-        return new Revision(1);
-//        return checkouts.get(checkouts.size() - 1).revision();
+        return new Revision((int) timestamp);
     }
 
+    public TrigramFileCounter getDataCluster(Revision currentRevision) {
+        long pointer = tree.get(currentRevision).pointer();
+        try(RandomAccessFile randomAccessFile = new RandomAccessFile(DATA_FILE, "r")) {
+            randomAccessFile.seek(pointer);
+            TrigramDataFileCluster cluster = TrigramDataFileCluster.readTrigramNode(randomAccessFile);
+            TrigramFileCounter result = new TrigramFileCounter();
+            cluster.deltas().forEach(it -> result.add(it.trigram(), it.file(), it.delta()));
+            return result;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public Revision getParent(Revision revision) {
+        return tree.get(revision).parent();
+    }
 }
