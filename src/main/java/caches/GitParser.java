@@ -56,18 +56,17 @@ public class GitParser {
             parseFirstCommit(firstCommit);
             var prevCommit = firstCommit;
             while (!commits.isEmpty()) {
-                if (commits.size() % 1000 == 0) {
-                    LOG.info(String.format("Remaining %d commits", commits.size()));
+                if (commits.size() % 100 == 0) {
                     System.out.printf("Remaining %d commits%n", commits.size());
+                }
+                if (commits.size() == 386622) {
                     break;
                 }
                 var commit = commits.removeLast();
                 parseCommit(commit, prevCommit);
                 prevCommit = commit;
             }
-        } catch (GitAPIException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
+        } catch (GitAPIException | IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -78,9 +77,7 @@ public class GitParser {
         revisions.getAndIncrement();
         changes.forEach(it -> {
             switch (it) {
-                case FileChange fileChange -> {
-                    tryRegisterNewFile(fileChange.getPlace().file());
-                }
+                case FileChange fileChange -> tryRegisterNewFile(fileChange.getPlace().file());
                 case FileHolderChange fileHolderChange -> {
                     tryRegisterNewFile(fileHolderChange.getOldFileName());
                     tryRegisterNewFile(fileHolderChange.getNewFileName());
@@ -170,6 +167,4 @@ public class GitParser {
         }
         sendChanges(changes);
     }
-
-
 }

@@ -15,8 +15,8 @@ public class GlobalVariables {
 
     public static void tryRegisterNewFile(File file) {
         if (reverseFilesInProject.get(file) == null) {
-            filesInProject.put(fileCounter.getAndIncrement(), file);
-            reverseFilesInProject.put(file, fileCounter.get());
+            filesInProject.put(fileCounter.get(), file);
+            reverseFilesInProject.put(file, fileCounter.getAndIncrement());
         }
     }
 }

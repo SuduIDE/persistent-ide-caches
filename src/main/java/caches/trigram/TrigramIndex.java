@@ -16,13 +16,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
-public class TrigramHistoryIndex implements Index<TrigramFile, Integer> {
+public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     public final TrigramCache cache = new TrigramCache();
     public final Preparer preparer = new Preparer();
-    private TrigramFileCounter counter = new TrigramFileCounter();
+    public TrigramFileCounter counter = new TrigramFileCounter();
 
-    public TrigramHistoryIndex() {
+    public TrigramIndex() {
 
     }
 
@@ -90,9 +90,7 @@ public class TrigramHistoryIndex implements Index<TrigramFile, Integer> {
     }
 
     private void pushActions(List<TrigramDataFileCluster.TrigramFileDelta> deltas, long timestamp) {
-        if (!deltas.isEmpty()) {
-            cache.pushCluster(timestamp, deltas);
-        }
+        cache.pushCluster(timestamp, deltas);
     }
 
     @Override
@@ -109,20 +107,25 @@ public class TrigramHistoryIndex implements Index<TrigramFile, Integer> {
     }
 
     @Override
-    public void checkout(Revision targetRevison) {
+    public void checkout(Revision targetRevision) {
+        cache.cacheRevision(targetRevision);
         var currentRevision = new Revision(GlobalVariables.currentRevision.get());
         var targetCounter = counter.copy();
-        while (!currentRevision.equals(targetRevison)) {
-            if (currentRevision.revision() > targetRevison.revision()) {
+        while (!currentRevision.equals(targetRevision)) {
+            if (currentRevision.revision() > targetRevision.revision()) {
                 targetCounter.decrease(cache.getDataCluster(currentRevision));
                 currentRevision = cache.getParent(currentRevision);
             } else {
-                targetCounter.add(cache.getDataCluster(targetRevison));
-                targetRevison = cache.getParent(targetRevison);
+                targetCounter.add(cache.getDataCluster(targetRevision));
+                targetRevision = cache.getParent(targetRevision);
             }
         }
         counter = targetCounter;
     }
+
+
+
+
 
     private class Preparer {
 
@@ -131,8 +134,8 @@ public class TrigramHistoryIndex implements Index<TrigramFile, Integer> {
             changes.forEach(it -> countChange(it, delta));
             counter.add(delta);
             var deltas = new ArrayList<TrigramDataFileCluster.TrigramFileDelta>();
-            counter.forEach((it) -> deltas.add(new TrigramDataFileCluster.TrigramFileDelta(it.trigram(), it.file(), it.value())));
-            pushActions(deltas, changes.get(0).getTimestamp());
+            delta.forEach((it) -> deltas.add(new TrigramDataFileCluster.TrigramFileDelta(it.trigram(), it.file(), it.value())));
+            if (!changes.isEmpty()) pushActions(deltas, changes.get(0).getTimestamp());
         }
 
         private boolean validateFilename(String filename) {
@@ -152,7 +155,7 @@ public class TrigramHistoryIndex implements Index<TrigramFile, Integer> {
         }
 
         private void countChange(Change change, TrigramFileCounter delta) {
-//            if (!validateChange(change)) return;
+            if (!validateChange(change)) return;
             switch (change) {
                 case AddChange addChange ->
                         delta.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));

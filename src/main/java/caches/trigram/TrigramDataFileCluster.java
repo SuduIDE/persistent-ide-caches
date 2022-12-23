@@ -3,10 +3,9 @@ package caches.trigram;
 import caches.GlobalVariables;
 import caches.records.Revision;
 import caches.records.Trigram;
+import caches.utils.ReadUtils;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -14,16 +13,15 @@ import java.util.List;
 public record TrigramDataFileCluster(Revision revision, Revision parent, List<TrigramFileDelta> deltas) {
 
     private static final int HEADER_BYTE_SIZE = Integer.BYTES + Integer.BYTES + Integer.BYTES;
-    private static final int RECORD_BYTE_SIZE = Character.BYTES * 3 + Integer.BYTES + Integer.BYTES;
 
-    public static TrigramDataFileCluster readTrigramNode(RandomAccessFile raf) {
+    public static TrigramDataFileCluster readTrigramDataFileCluster(InputStream is) {
         try {
-            var revision = new Revision(raf.readInt());
-            var parent = new Revision(raf.readInt());
-            var size = raf.readInt();
+            var revision = new Revision(ReadUtils.readInt(is));
+            var parent = new Revision(ReadUtils.readInt(is));
+            var size = ReadUtils.readInt(is);
             List<TrigramFileDelta> deltas = new ArrayList<>();
             for (int i = 0; i < size; i++) {
-                deltas.add(TrigramFileDelta.read(raf));
+                deltas.add(TrigramFileDelta.read(is));
             }
             return new TrigramDataFileCluster(revision, parent, deltas);
         } catch (IOException e) {
@@ -32,7 +30,11 @@ public record TrigramDataFileCluster(Revision revision, Revision parent, List<Tr
     }
 
     byte[] toBytes() {
-        var bytes = ByteBuffer.allocate(HEADER_BYTE_SIZE + deltas().size() * RECORD_BYTE_SIZE)
+        int size = HEADER_BYTE_SIZE;
+        for (var it : deltas) {
+            size += it.byteSize();
+        }
+        var bytes = ByteBuffer.allocate(size)
                 .putInt(revision.revision())
                 .putInt(parent.revision())
                 .putInt(deltas.size());
@@ -40,47 +42,24 @@ public record TrigramDataFileCluster(Revision revision, Revision parent, List<Tr
         return bytes.array();
     }
 
-    public enum Action {
-        ADD(true),
-        DELETE(false);
-
-        private final boolean state;
-
-        Action(boolean state) {
-            this.state = state;
-        }
-
-        public boolean getState() {
-            return state;
-        }
-    }
-
-    public record TrigramFileAction(Trigram trigram, File file, Action action) {
-        private void putInBuffer(ByteBuffer byteBuffer) {
-            byteBuffer.put(trigram.trigram().getBytes());
-            byteBuffer.putInt(GlobalVariables.reverseFilesInProject.get(file));
-            byteBuffer.put((byte) (action.state ? 1 : 0));
-        }
-
-        private static TrigramFileAction read(RandomAccessFile raf) throws IOException {
-            var trigram = new Trigram(new String(new char[]{raf.readChar(), raf.readChar(), raf.readChar()}));
-            var file = GlobalVariables.filesInProject.get(raf.readInt());
-            var action = raf.readBoolean() ? Action.ADD : Action.DELETE;
-            return new TrigramFileAction(trigram, file, action);
-        }
-    }
-
     public record TrigramFileDelta(Trigram trigram, File file, int delta) {
+
+        public int byteSize() {
+            return Short.BYTES + trigram.trigram().getBytes().length + Integer.BYTES + Integer.BYTES;
+        }
+
         private void putInBuffer(ByteBuffer byteBuffer) {
+            byteBuffer.putShort((short) trigram.trigram().getBytes().length);
             byteBuffer.put(trigram.trigram().getBytes());
             byteBuffer.putInt(GlobalVariables.reverseFilesInProject.get(file));
             byteBuffer.putInt(delta);
         }
 
-        private static TrigramFileDelta read(RandomAccessFile raf) throws IOException {
-            var trigram = new Trigram(new String(new char[]{raf.readChar(), raf.readChar(), raf.readChar()}));
-            var file = GlobalVariables.filesInProject.get(raf.readInt());
-            var delta = raf.readInt();
+        private static TrigramFileDelta read(InputStream is) throws IOException {
+            var trigram = new Trigram(ReadUtils.readUTF(is));
+            var fileInt = ReadUtils.readInt(is);
+            var file = GlobalVariables.filesInProject.get(fileInt);
+            var delta = ReadUtils.readInt(is);
             return new TrigramFileDelta(trigram, file, delta);
         }
     }
