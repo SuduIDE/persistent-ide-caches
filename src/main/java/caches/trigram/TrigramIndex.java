@@ -1,6 +1,5 @@
 package caches.trigram;
 
-import caches.GlobalVariables;
 import caches.Index;
 import caches.changes.*;
 import caches.records.Revision;
@@ -15,6 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
+
+import static caches.GlobalVariables.revisions;
 
 public class TrigramIndex implements Index<TrigramFile, Integer> {
 
@@ -95,7 +96,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     @Override
     public Integer getValue(TrigramFile trigramFile, Revision revision) {
-        var currentRevision = new Revision(GlobalVariables.currentRevision.get());
+        var currentRevision = revisions.getCurrentRevision();
         if (revision.equals(currentRevision)) {
             return counter.get(trigramFile.trigram(), trigramFile.file());
         } else {
@@ -108,23 +109,19 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     @Override
     public void checkout(Revision targetRevision) {
-        cache.cacheRevision(targetRevision);
-        var currentRevision = new Revision(GlobalVariables.currentRevision.get());
+        var currentRevision = revisions.getCurrentRevision();
         var targetCounter = counter.copy();
         while (!currentRevision.equals(targetRevision)) {
             if (currentRevision.revision() > targetRevision.revision()) {
                 targetCounter.decrease(cache.getDataCluster(currentRevision));
-                currentRevision = cache.getParent(currentRevision);
+                currentRevision = revisions.getParent(currentRevision);
             } else {
                 targetCounter.add(cache.getDataCluster(targetRevision));
-                targetRevision = cache.getParent(targetRevision);
+                targetRevision = revisions.getParent(targetRevision);
             }
         }
         counter = targetCounter;
     }
-
-
-
 
 
     private class Preparer {
@@ -139,9 +136,6 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
         }
 
         private boolean validateFilename(String filename) {
-//            if (filename.endsWith("java")) {
-//                return true;
-//            }
             return Stream.of(".java"/*, ".txt", ".kt", ".py"*/).anyMatch(filename::endsWith);
         }
 
@@ -164,7 +158,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
                     delta.add(modifyChange.getNewFileName(), getTrigramsCount(modifyChange.getNewFileContent()));
                 }
                 case CopyChange copyChange ->
-                        delta.add(copyChange.getNewFileName(), getTrigramsCount(copyChange.getNewFileName()));
+                        delta.add(copyChange.getNewFileName(), getTrigramsCount(copyChange.getNewFileContent()));
                 case RenameChange renameChange -> {
                     delta.decrease(renameChange.getOldFileName(), getTrigramsCount(renameChange.getOldFileContent()));
                     delta.add(renameChange.getNewFileName(), getTrigramsCount(renameChange.getNewFileContent()));

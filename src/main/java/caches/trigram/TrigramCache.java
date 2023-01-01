@@ -12,25 +12,25 @@ import java.util.Map;
 public class TrigramCache {
     public static final String DIRECTORY = ".trigrams/";
     public static final File DATA_FILE = new File(DIRECTORY + ".data");
-    private final Map<Revision, TrigramNode> tree = new HashMap<>();
-    private Revision cachedRevision = new Revision(0);
+    private final Map<Revision, Long> pointers = new HashMap<>();
 
     public void pushCluster(long timestamp, List<TrigramDataFileCluster.TrigramFileDelta> deltas) {
-        var revision = new Revision(GlobalVariables.revisions.get());
-        var parent = cachedRevision;
+        var revision = GlobalVariables.revisions.getCurrentRevision();
         long size = DATA_FILE.length();
-        tree.put(revision, new TrigramNode(revision, parent, size));
+        pointers.put(revision, size);
         try (FileOutputStream writer = new FileOutputStream(DATA_FILE, true)) {
-            writer.write(new TrigramDataFileCluster(revision, parent, deltas).toBytes());
+            writer.write(new TrigramDataFileCluster(deltas).toBytes());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        cacheRevision();
     }
 
-    public TrigramFileCounter getDataCluster(Revision currentRevision) {
-        long pointer = tree.get(currentRevision).pointer();
-        try(RandomAccessFile randomAccessFile = new RandomAccessFile(DATA_FILE, "r")) {
+    public TrigramFileCounter getDataCluster(Revision revision) {
+        if (!pointers.containsKey(revision)) {
+            return TrigramFileCounter.EMPTY_COUNTER;
+        }
+        long pointer = pointers.get(revision);
+        try (RandomAccessFile randomAccessFile = new RandomAccessFile(DATA_FILE, "r")) {
             randomAccessFile.seek(pointer);
             var bufferedInputStream = new BufferedInputStream(new FileInputStream(randomAccessFile.getFD()));
             TrigramDataFileCluster cluster = TrigramDataFileCluster.readTrigramDataFileCluster(bufferedInputStream);
@@ -40,17 +40,5 @@ public class TrigramCache {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public Revision getParent(Revision revision) {
-        return tree.get(revision).parent();
-    }
-
-    private void cacheRevision() {
-        cachedRevision = new Revision(GlobalVariables.revisions.get());
-    }
-
-    public void cacheRevision(Revision revision) {
-        cachedRevision = revision;
     }
 }

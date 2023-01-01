@@ -20,64 +20,60 @@ public class Main {
         Index<String, String> echoIndex = new Index<>() {
             @Override
             public String getValue(String s, Revision revision) {
+                System.out.println("Echo: getValue " + s + " from" + revision.revision());
                 return null;
             }
 
             @Override
             public void checkout(Revision revision) {
+                System.out.println("Echo: checkout to " + revision.revision());
             }
 
             @Override
             public void prepare(List<Change> changes) {
+                System.out.println("Echo: prepare");
                 changes.forEach(System.out::println);
             }
 
             @Override
             public void processChanges(List<Change> changes) {
-
+                System.out.println("Echo: process");
+                changes.forEach(System.out::println);
             }
         };
         TrigramIndex trigramHistoryIndex = new TrigramIndex();
         benchmark(() -> {
             try (Git git = Git.open(new File(args[0]))) {
-                var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex));
+                var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex), 1000);
                 parser.parse();
             } catch (IOException ioException) {
                 throw new RuntimeException(ioException);
             }
-            System.out.println("Parsed 1000 commits from git");
+//            System.out.println("Parsed 1000 commits from git");
         });
-        System.out.println("Current revision: " + GlobalVariables.currentRevision.get());
-        benchmark(() -> {
-            System.out.println("checkout to 1");
-            trigramHistoryIndex.checkout(new Revision(1));
-            GlobalVariables.currentRevision.set(1);
-        });
-        benchmark(() -> {
-            System.out.println("checkout to 10");
-            trigramHistoryIndex.checkout(new Revision(10));
-            GlobalVariables.currentRevision.set(10);
-        });
-        benchmark(() -> {
-            System.out.println("checkout to 100");
-            trigramHistoryIndex.checkout(new Revision(100));
-            GlobalVariables.currentRevision.set(100);
-        });
-        benchmark(() -> {
-            System.out.println("checkout to 50");
-            trigramHistoryIndex.checkout(new Revision(50));
-            GlobalVariables.currentRevision.set(50);
-        });
-        benchmark(() -> {
-            System.out.println("checkout to 1000");
-            trigramHistoryIndex.checkout(new Revision(1000));
-            GlobalVariables.currentRevision.set(1000);
-        });
+        System.out.println("Current revision: " + GlobalVariables.revisions.getCurrentRevision());
+//        trigramHistoryIndex.counter.forEach(System.out::println);
+//        trigramHistoryIndex.checkout(new Revision(1));
+//        System.out.println("checkout");
+//        trigramHistoryIndex.counter.forEach(System.out::println);
+        benchmarkCheckout(new Revision(0), trigramHistoryIndex);
+        benchmarkCheckout(new Revision(10), trigramHistoryIndex);
+        benchmarkCheckout(new Revision(100), trigramHistoryIndex);
+        benchmarkCheckout(new Revision(50), trigramHistoryIndex);
+        benchmarkCheckout(new Revision(999), trigramHistoryIndex);
     }
 
     public static void benchmark(Runnable runnable) {
         long start = System.currentTimeMillis();
         runnable.run();
         System.out.println("Benchmarked: " + ((System.currentTimeMillis() - start) / 1000) + " second");
+    }
+
+    public static void benchmarkCheckout(Revision targetRevision, Index<?, ?> index) {
+        benchmark(() -> {
+            System.out.println("checkout to " + targetRevision.revision());
+            index.checkout(targetRevision);
+            GlobalVariables.revisions.setCurrentRevision(targetRevision);
+        });
     }
 }

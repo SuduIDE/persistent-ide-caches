@@ -11,6 +11,8 @@ import java.util.function.Consumer;
 
 public class TrigramFileCounter {
 
+    public static final TrigramFileCounter EMPTY_COUNTER = new TrigramFileCounter(Collections.emptyMap());
+
     private final Map<Trigram, Map<File, Integer>> counter;
 
     public TrigramFileCounter(Map<Trigram, Map<File, Integer>> counter) {

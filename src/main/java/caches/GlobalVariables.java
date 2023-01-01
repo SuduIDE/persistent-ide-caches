@@ -8,8 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class GlobalVariables {
 
     public static final AtomicInteger fileCounter = new AtomicInteger();
-    public static final AtomicInteger currentRevision = new AtomicInteger();
-    public static final AtomicInteger revisions = new AtomicInteger(0);
+    public static final Revisions revisions = new Revisions();
     public static final Map<Integer, File> filesInProject = new TreeMap<>();
     public static final Map<File, Integer> reverseFilesInProject = new TreeMap<>();
 

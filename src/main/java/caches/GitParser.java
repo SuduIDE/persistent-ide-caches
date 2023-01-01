@@ -24,7 +24,8 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static caches.GlobalVariables.*;
+import static caches.GlobalVariables.revisions;
+import static caches.GlobalVariables.tryRegisterNewFile;
 
 public class GitParser {
 
@@ -32,11 +33,20 @@ public class GitParser {
     private final Git git;
     private final Repository repository;
     private final List<ChangeProcessor> indexes;
+    private final int commitsLimit;
 
     public GitParser(Git git, List<ChangeProcessor> indices) {
         this.git = git;
         repository = git.getRepository();
         this.indexes = indices;
+        this.commitsLimit = Integer.MAX_VALUE;
+    }
+
+    public GitParser(Git git, List<ChangeProcessor> indices, int commitsLimit) {
+        this.git = git;
+        repository = git.getRepository();
+        this.indexes = indices;
+        this.commitsLimit = commitsLimit;
     }
 
     public void parse() {
@@ -55,16 +65,16 @@ public class GitParser {
             var firstCommit = commits.removeLast();
             parseFirstCommit(firstCommit);
             var prevCommit = firstCommit;
-            while (!commits.isEmpty()) {
-                if (commits.size() % 100 == 0) {
-                    System.out.printf("Remaining %d commits%n", commits.size());
-                }
-                if (commits.size() == 386622) {
-                    break;
+            int commitsParsed = 0;
+            int totalCommits = Math.min(commitsLimit, commits.size());
+            while (commitsParsed < totalCommits) {
+                if (commitsParsed % 100 == 0) {
+                    System.out.printf("Processed %d commits out of %d %n", commitsParsed, totalCommits);
                 }
                 var commit = commits.removeLast();
                 parseCommit(commit, prevCommit);
                 prevCommit = commit;
+                commitsParsed++;
             }
         } catch (GitAPIException | IOException e) {
             throw new RuntimeException(e);
@@ -72,9 +82,7 @@ public class GitParser {
     }
 
 
-
     void sendChanges(List<Change> changes) {
-        revisions.getAndIncrement();
         changes.forEach(it -> {
             switch (it) {
                 case FileChange fileChange -> tryRegisterNewFile(fileChange.getPlace().file());
@@ -84,8 +92,8 @@ public class GitParser {
                 }
             }
         });
+        revisions.setCurrentRevision(revisions.addRevision(revisions.getCurrentRevision()));
         indexes.forEach(it -> it.prepare(changes));
-        currentRevision.set(revisions.get());
     }
 
     private void parseCommit(RevCommit commit, RevCommit prevCommit) throws IOException, GitAPIException {
