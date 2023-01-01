@@ -35,7 +35,7 @@ public class TrigramCache {
             var bufferedInputStream = new BufferedInputStream(new FileInputStream(randomAccessFile.getFD()));
             TrigramDataFileCluster cluster = TrigramDataFileCluster.readTrigramDataFileCluster(bufferedInputStream);
             TrigramFileCounter result = new TrigramFileCounter();
-            cluster.deltas().forEach(it -> result.add(it.trigram(), it.file(), it.delta()));
+            cluster.deltas().forEach(it -> result.add(it.file(), it.trigram(), it.delta()));
             return result;
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -98,10 +98,10 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     public Integer getValue(TrigramFile trigramFile, Revision revision) {
         var currentRevision = revisions.getCurrentRevision();
         if (revision.equals(currentRevision)) {
-            return counter.get(trigramFile.trigram(), trigramFile.file());
+            return counter.get(trigramFile.file(), trigramFile.trigram());
         } else {
             checkout(revision);
-            var ans = counter.get(trigramFile.trigram(), trigramFile.file());
+            var ans = counter.get(trigramFile.file(), trigramFile.trigram());
             checkout(currentRevision);
             return ans;
         }

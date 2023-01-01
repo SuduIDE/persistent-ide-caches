@@ -60,7 +60,7 @@ public class Main {
         benchmarkCheckout(new Revision(10), trigramHistoryIndex);
         benchmarkCheckout(new Revision(100), trigramHistoryIndex);
         benchmarkCheckout(new Revision(50), trigramHistoryIndex);
-        benchmarkCheckout(new Revision(999), trigramHistoryIndex);
+        benchmarkCheckout(new Revision(1000), trigramHistoryIndex);
     }
 
     public static void benchmark(Runnable runnable) {

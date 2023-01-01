@@ -76,6 +76,7 @@ public class GitParser {
                 prevCommit = commit;
                 commitsParsed++;
             }
+            System.out.println("Processed " + totalCommits + " commits");
         } catch (GitAPIException | IOException e) {
             throw new RuntimeException(e);
         }
