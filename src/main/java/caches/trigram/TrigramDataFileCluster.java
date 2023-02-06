@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,20 +43,17 @@ public record TrigramDataFileCluster(List<TrigramFileDelta> deltas) {
     public record TrigramFileDelta(Trigram trigram, File file, int delta) {
 
         public int byteSize() {
-            return trigram.trigram().getBytes().length + Integer.BYTES + Integer.BYTES;
+            return trigram.trigram().getBytes(StandardCharsets.UTF_8).length + Integer.BYTES + Integer.BYTES;
         }
 
         private void putInBuffer(ByteBuffer byteBuffer) {
-            byteBuffer.put(trigram.trigram().getBytes());
+            byteBuffer.put(trigram.trigram().getBytes(StandardCharsets.UTF_8));
             byteBuffer.putInt(GlobalVariables.reverseFilesInProject.get(file));
             byteBuffer.putInt(delta);
         }
 
         private static TrigramFileDelta read(InputStream is) throws IOException {
-            var trigram = new Trigram(
-                    String.valueOf(new char[]{ReadUtils.readOneUTF8(is),
-                            ReadUtils.readOneUTF8(is),
-                            ReadUtils.readOneUTF8(is)}));
+            var trigram = new Trigram(ReadUtils.readNSymbols(is, 3));
             var fileInt = ReadUtils.readInt(is);
             var file = GlobalVariables.filesInProject.get(fileInt);
             var delta = ReadUtils.readInt(is);

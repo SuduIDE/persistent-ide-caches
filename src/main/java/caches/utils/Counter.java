@@ -1,6 +1,7 @@
 package caches.utils;
 
 
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -8,12 +9,19 @@ import java.util.function.BiConsumer;
 public class Counter<Key> {
     private final Map<Key, Integer> counter;
 
+    // LIMIT=300
+    // fast-util.Avl 210 64 1 9 9 64
+    // fast-util.OpenHash 98 37 0 5 5 38
+    // fast-util.RB 202 68 1 10 9 67
+    // fast-util.LinkedOpenHash 96 34 0 4 4 33
+    // HashMap 72 28 0 3 4 27
+
     public Counter() {
         counter = new HashMap<>();
     }
 
     public Counter(Map<Key, Integer> counter) {
-        this.counter = counter;
+        this.counter = new HashMap<>(counter);
     }
 
     public void add(Key key) {
@@ -61,7 +69,7 @@ public class Counter<Key> {
     }
 
     public Counter<Key> copy() {
-        return new Counter<>(new HashMap<>(counter));
+        return new Counter<>(counter);
     }
 
     public void forEach(BiConsumer<Key, Integer> function) {

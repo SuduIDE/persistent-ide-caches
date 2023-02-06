@@ -6,10 +6,6 @@ import caches.records.Revision;
 import caches.records.Trigram;
 import caches.records.TrigramFile;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -23,50 +19,16 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     public final Preparer preparer = new Preparer();
     public TrigramFileCounter counter = new TrigramFileCounter();
 
-    public TrigramIndex() {
-
-    }
+    public TrigramIndex() {}
 
     private static TrigramCounter getTrigramsCount(String str) {
+        int[] codePoints = str.codePoints().toArray();
         TrigramCounter result = new TrigramCounter();
-        for (int i = 3; i <= str.length(); i++) {
-            Trigram trigram = new Trigram(str.substring(i - 3, i));
+        for (int i = 0; i < codePoints.length - 3; i++) {
+            Trigram trigram = new Trigram(new String(codePoints, i ,3));
             result.add(trigram);
         }
         return result;
-    }
-
-    private static TrigramCounter getTrigramsCount(File file, int pos, int length) {
-        TrigramCounter result = new TrigramCounter();
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            if (reader.skip(pos) != pos) {
-                return result;
-            }
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < 3; i++) {
-                int read = reader.read();
-                if (read == -1) {
-                    return result;
-                }
-                sb.append((char) read);
-            }
-            int index = 2;
-            int read = reader.read();
-            while (index < length && read != -1) {
-                Trigram trigram = new Trigram(sb.toString());
-                result.add(trigram);
-                sb.deleteCharAt(0).append((char) read);
-                index++;
-                read = reader.read();
-            }
-            return result;
-        } catch (IOException e) {
-            throw new RuntimeException("Error on reading file " + file.getName(), e);
-        }
-    }
-
-    private static TrigramCounter getTrigramsCount(File file) {
-        return getTrigramsCount(file, 0, Integer.MAX_VALUE);
     }
 
     @Override

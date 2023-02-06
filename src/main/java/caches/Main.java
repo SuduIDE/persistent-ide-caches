@@ -42,25 +42,26 @@ public class Main {
             }
         };
         TrigramIndex trigramHistoryIndex = new TrigramIndex();
+        final int LIMIT = 300;
         benchmark(() -> {
             try (Git git = Git.open(new File(args[0]))) {
-                var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex), 1000);
+                var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex), LIMIT);
                 parser.parse();
             } catch (IOException ioException) {
                 throw new RuntimeException(ioException);
             }
 //            System.out.println("Parsed 1000 commits from git");
         });
-        System.out.println("Current revision: " + GlobalVariables.revisions.getCurrentRevision());
+//        System.out.println("Current revision: " + GlobalVariables.revisions.getCurrentRevision());
 //        trigramHistoryIndex.counter.forEach(System.out::println);
-//        trigramHistoryIndex.checkout(new Revision(1));
-//        System.out.println("checkout");
+//        System.out.println(GlobalVariables.revisions.getCurrentRevision());
+//        benchmarkCheckout(new Revision(3), trigramHistoryIndex);
 //        trigramHistoryIndex.counter.forEach(System.out::println);
         benchmarkCheckout(new Revision(0), trigramHistoryIndex);
         benchmarkCheckout(new Revision(10), trigramHistoryIndex);
         benchmarkCheckout(new Revision(100), trigramHistoryIndex);
         benchmarkCheckout(new Revision(50), trigramHistoryIndex);
-        benchmarkCheckout(new Revision(1000), trigramHistoryIndex);
+        benchmarkCheckout(new Revision(LIMIT), trigramHistoryIndex);
     }
 
     public static void benchmark(Runnable runnable) {
