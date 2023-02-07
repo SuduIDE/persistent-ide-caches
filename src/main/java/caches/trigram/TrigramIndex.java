@@ -96,7 +96,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
         }
 
         private void countChange(Change change, TrigramFileCounter delta) {
-            if (!validateChange(change)) return;
+//            if (!validateChange(change)) return;
             switch (change) {
                 case AddChange addChange ->
                         delta.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));

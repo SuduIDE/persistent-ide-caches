@@ -12,6 +12,9 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
+import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
+import org.eclipse.jgit.treewalk.filter.PathSuffixFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -101,6 +104,8 @@ public class GitParser {
         try (var tw = new TreeWalk(repository)) {
             tw.addTree(prevCommit.getTree());
             tw.addTree(commit.getTree());
+            tw.setFilter(IndexDiffFilter.ANY_DIFF);
+            tw.setFilter(AndTreeFilter.create(IndexDiffFilter.ANY_DIFF, PathSuffixFilter.create(".java")));
             tw.setRecursive(true);
             var rawChanges = DiffEntry.scan(tw);
             sendChanges(rawChanges.stream()

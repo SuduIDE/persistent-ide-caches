@@ -42,7 +42,7 @@ public class Main {
             }
         };
         TrigramIndex trigramHistoryIndex = new TrigramIndex();
-        final int LIMIT = 300;
+        final int LIMIT = 1000;
         benchmark(() -> {
             try (Git git = Git.open(new File(args[0]))) {
                 var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex), LIMIT);
