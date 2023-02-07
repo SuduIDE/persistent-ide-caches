@@ -1,5 +1,7 @@
 package caches.utils;
 
+import caches.records.Trigram;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -60,5 +62,9 @@ public class ReadUtils {
         }
         return StandardCharsets.UTF_8.decode(ByteBuffer.wrap(bytes, 0, len));
 
+    }
+
+    public static Trigram readTrigram(InputStream is) throws IOException {
+        return new Trigram(readNSymbols(is, 3));
     }
 }

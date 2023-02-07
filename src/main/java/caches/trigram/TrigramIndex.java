@@ -6,9 +6,7 @@ import caches.records.Revision;
 import caches.records.Trigram;
 import caches.records.TrigramFile;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 import static caches.GlobalVariables.revisions;
@@ -41,18 +39,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
         preparer.process(changes);
     }
 
-    private void processChange(Change change, List<TrigramDataFileCluster.TrigramFileDelta> deltas) {
-        if (Objects.requireNonNull(change) instanceof AddChange addChange) {
-            var trigrams = getTrigramsCount(addChange.getAddedString());
-            trigrams.forEach(((trigram, delta) -> deltas.add(
-                    new TrigramDataFileCluster.TrigramFileDelta(trigram, addChange.getPlace().file(), delta
-                    ))));
-        } else {
-            throw new IllegalStateException("Unexpected value: " + change);
-        }
-    }
-
-    private void pushActions(List<TrigramDataFileCluster.TrigramFileDelta> deltas, long timestamp) {
+    private void pushActions(TrigramFileCounter deltas, long timestamp) {
         cache.pushCluster(timestamp, deltas);
     }
 
@@ -92,9 +79,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
             var delta = new TrigramFileCounter();
             changes.forEach(it -> countChange(it, delta));
             counter.add(delta);
-            var deltas = new ArrayList<TrigramDataFileCluster.TrigramFileDelta>();
-            delta.forEach((it) -> deltas.add(new TrigramDataFileCluster.TrigramFileDelta(it.trigram(), it.file(), it.value())));
-            if (!changes.isEmpty()) pushActions(deltas, changes.get(0).getTimestamp());
+            if (!changes.isEmpty()) pushActions(delta, changes.get(0).getTimestamp());
         }
 
         private boolean validateFilename(String filename) {

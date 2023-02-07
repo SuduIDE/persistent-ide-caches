@@ -5,7 +5,6 @@ import caches.records.Revision;
 
 import java.io.*;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
@@ -14,7 +13,7 @@ public class TrigramCache {
     public static final File DATA_FILE = new File(DIRECTORY + ".data");
     private final Map<Revision, Long> pointers = new HashMap<>();
 
-    public void pushCluster(long timestamp, List<TrigramDataFileCluster.TrigramFileDelta> deltas) {
+    public void pushCluster(long timestamp, TrigramFileCounter deltas) {
         var revision = GlobalVariables.revisions.getCurrentRevision();
         long size = DATA_FILE.length();
         pointers.put(revision, size);
@@ -34,9 +33,7 @@ public class TrigramCache {
             randomAccessFile.seek(pointer);
             var bufferedInputStream = new BufferedInputStream(new FileInputStream(randomAccessFile.getFD()));
             TrigramDataFileCluster cluster = TrigramDataFileCluster.readTrigramDataFileCluster(bufferedInputStream);
-            TrigramFileCounter result = new TrigramFileCounter();
-            cluster.deltas().forEach(it -> result.add(it.file(), it.trigram(), it.delta()));
-            return result;
+            return cluster.deltas();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
