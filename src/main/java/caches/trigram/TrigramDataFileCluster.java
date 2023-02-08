@@ -20,7 +20,8 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas) {
             TrigramFileCounter deltas = new TrigramFileCounter();
             for (int i = 0; i < size; i++) {
                 var it = TrigramCounterNode.read(is);
-                deltas.add(it.file(), it.trigramCounter());
+                deltas.getAsMap().put(it.file(), it.trigramCounter());
+//                deltas.add(it.file(), it.trigramCounter());
             }
             return new TrigramDataFileCluster(deltas);
         } catch (IOException e) {

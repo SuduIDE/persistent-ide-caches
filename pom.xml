@@ -47,11 +47,6 @@
             <version>1.10.19</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>it.unimi.dsi</groupId>
-            <artifactId>fastutil</artifactId>
-            <version>8.5.11</version>
-        </dependency>
         <!-- https://mvnrepository.com/artifact/org.lmdbjava/lmdbjava -->
         <dependency>
             <groupId>org.lmdbjava</groupId>

@@ -72,7 +72,8 @@ public class Main {
 
     public static void benchmarkCheckout(Revision targetRevision, Index<?, ?> index) {
         benchmark(() -> {
-            System.out.println("checkout to " + targetRevision.revision());
+            System.out.printf("checkout from %d to %d\n", GlobalVariables.revisions.getCurrentRevision().revision(),
+                    targetRevision.revision());
             index.checkout(targetRevision);
             GlobalVariables.revisions.setCurrentRevision(targetRevision);
         });
