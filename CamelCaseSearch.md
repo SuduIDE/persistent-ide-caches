@@ -18,7 +18,7 @@ One can notice that after each letter in the pattern goes only the next letter o
 
 *For example, for the phrase `CamelCaseSearch` the trigrams, starting from `m` are*
 
-`mel`, `meC`, `mCa` and `mCC`.
+`mel`, `meC`, `mCa` and `mCS`.
 
 ## Data storage
 
