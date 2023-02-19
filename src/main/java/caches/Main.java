@@ -45,13 +45,18 @@ public class Main {
         final int LIMIT = 1000;
         benchmark(() -> {
             try (Git git = Git.open(new File(args[0]))) {
-                var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex), LIMIT);
-                parser.parse();
+//                var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex), LIMIT);
+                var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex));
+                parser.parseAll();
             } catch (IOException ioException) {
                 throw new RuntimeException(ioException);
             }
 //            System.out.println("Parsed 1000 commits from git");
         });
+
+        GlobalVariables.revisions.printInfo();
+        System.exit(0);
+
 //        System.out.println("Current revision: " + GlobalVariables.revisions.getCurrentRevision());
 //        trigramHistoryIndex.counter.forEach(System.out::println);
 //        System.out.println(GlobalVariables.revisions.getCurrentRevision());
