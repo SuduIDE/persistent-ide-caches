@@ -47,6 +47,7 @@ public class Main {
             try (Git git = Git.open(new File(args[0]))) {
 //                var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex), LIMIT);
                 var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex));
+//                var parser = new GitParser(git, List.of());
                 parser.parseAll();
             } catch (IOException ioException) {
                 throw new RuntimeException(ioException);

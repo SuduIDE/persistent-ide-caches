@@ -34,6 +34,7 @@ public class GitParser {
     private final Repository repository;
     private final List<Index<?, ?>> indexes;
     private final int commitsLimit;
+    public static final boolean PARSE_ONLY_TREE = false;
 
     public GitParser(Git git, List<Index<?, ?>> indices) {
         this.git = git;
@@ -51,44 +52,41 @@ public class GitParser {
 
     public void parseAll() throws IOException {
         var refs = repository.getRefDatabase().getRefs();
+        System.err.println("Parsing " + refs.size() + " refs");
+        int cnt = 0;
         for (Ref ref : refs) {
             parseOne(ref.getObjectId());
+            System.err.println("Parsed " + (++cnt) + "/" + refs.size() + " refs");
         }
     }
 
     public void parseOne(ObjectId head) {
-        System.out.println("Parsing: " + head.getName());
+        LOG.info("Parsing ref: " + head.getName());
         try (RevWalk walk = new RevWalk(repository)) {
             Deque<RevCommit> commits = new ArrayDeque<>();
+            RevCommit firstCommit = null;
             {
                 walk.markStart(walk.parseCommit(head));
-                walk.forEach(commits::add);
-            }
-            if (!commits.iterator().hasNext()) {
-                throw new RuntimeException("Repository hasn't commits");
+                for (var c : walk) {
+                    if (!parsedCommits.containsKey(c.getName())) {
+                        commits.addLast(c);
+                        continue;
+                    }
+                    firstCommit = c;
+                    break;
+                }
             }
 
             LOG.info(String.format("%d commits finded to process", commits.size()));
             System.out.printf("%d finded to process%n", commits.size());
 
-            RevCommit firstCommit = null;
-            while (!commits.isEmpty()) {
-                var last = commits.getLast();
-                if (parsedCommits.containsKey(last)) {
-                    firstCommit = last;
-                    commits.removeLast();
-                } else {
-                    break;
-                }
-            }
-
             if (firstCommit == null) {
                 revisions.setCurrentRevision(Revision.NULL);
                 indexes.forEach(i -> i.checkout(Revision.NULL));
-                firstCommit = commits.getLast();
+                firstCommit = commits.removeLast();
                 parseFirstCommit(firstCommit);
             } else {
-                var re = parsedCommits.get(firstCommit);
+                var re = parsedCommits.get(firstCommit.getName());
                 revisions.setCurrentRevision(re);
                 indexes.forEach(i -> i.checkout(re));
             }
@@ -134,7 +132,12 @@ public class GitParser {
     }
 
     private void parseCommit(RevCommit commit, RevCommit prevCommit) throws IOException, GitAPIException {
-        Revision rev = parsedCommits.computeIfAbsent(commit, c -> revisions.addRevision(revisions.getCurrentRevision()));
+        Revision rev = parsedCommits.computeIfAbsent(commit.getName(), c -> revisions.addRevision(revisions.getCurrentRevision()));
+
+        if (PARSE_ONLY_TREE) {
+            sendChanges(List.of(), rev);
+            return;
+        }
 
         try (var tw = new TreeWalk(repository)) {
             tw.addTree(prevCommit.getTree());
@@ -202,11 +205,16 @@ public class GitParser {
 
     private void parseFirstCommit(RevCommit first) {
         if (!revisions.getCurrentRevision().equals(Revision.NULL)) {
-            throw new RuntimeException("???");
+            throw new RuntimeException("First commit should have null revision parent");
         }
-        Revision rev = parsedCommits.computeIfAbsent(first, c -> revisions.addRevision(revisions.getCurrentRevision()));
+        Revision rev = parsedCommits.computeIfAbsent(first.getName(), c -> revisions.addRevision(revisions.getCurrentRevision()));
 
-        System.err.println("Add first: " + first.getShortMessage());
+        LOG.info("First commit: " + first.getShortMessage());
+        if (PARSE_ONLY_TREE) {
+            sendChanges(List.of(), rev);
+            return;
+        }
+
         List<Change> changes = new ArrayList<>();
         try (TreeWalk treeWalk = new TreeWalk(repository)) {
             treeWalk.addTree(first.getTree());
