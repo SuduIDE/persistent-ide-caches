@@ -79,4 +79,8 @@ public class Counter<Key> {
     public static <Key> Counter<Key> emptyCounter() {
         return new Counter<>();
     }
+
+    public long size() {
+        return counter.size();
+    }
 }

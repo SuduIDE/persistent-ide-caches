@@ -125,6 +125,9 @@ public class GitParser {
         });
         revisions.setCurrentRevision(revision);
         indexes.forEach(it -> it.prepare(changes));
+        if (!PARSE_ONLY_TREE && revisions.changes.put(revision, changes) != null) {
+            throw new RuntimeException("Found parent twice");
+        }
     }
 
     void sendChanges(List<Change> changes) {
@@ -146,7 +149,7 @@ public class GitParser {
             tw.setFilter(AndTreeFilter.create(IndexDiffFilter.ANY_DIFF, PathSuffixFilter.create(".java")));
             tw.setRecursive(true);
             var rawChanges = DiffEntry.scan(tw);
-            sendChanges(rawChanges.stream()
+            var changes = rawChanges.stream()
                     .map(it -> {
                         try {
                             return processDiff(it);
@@ -155,8 +158,9 @@ public class GitParser {
                         }
                     })
                     .flatMap(List::stream)
-                    .collect(Collectors.toList())
-            , rev);
+                    .collect(Collectors.toList());
+//            System.err.println(rev.revision() + " " + commit.getName() + " " + commit.getShortMessage() + " " + changes.size());
+            sendChanges(changes, rev);
         }
     }
 

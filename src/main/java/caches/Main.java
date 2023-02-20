@@ -55,7 +55,10 @@ public class Main {
 //            System.out.println("Parsed 1000 commits from git");
         });
 
-        GlobalVariables.revisions.printInfo();
+        if (args.length < 2) {
+            throw new RuntimeException("Needs path to output file");
+        }
+        GlobalVariables.revisions.printInfo(args[1]);
         System.exit(0);
 
 //        System.out.println("Current revision: " + GlobalVariables.revisions.getCurrentRevision());

@@ -23,7 +23,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     private static TrigramCounter getTrigramsCount(String str) {
         int[] codePoints = str.codePoints().toArray();
         TrigramCounter result = new TrigramCounter();
-        for (int i = 0; i < codePoints.length - 3; i++) {
+        for (int i = 0; i <= codePoints.length - 3; i++) {
             Trigram trigram = new Trigram(new String(codePoints, i ,3));
             result.add(trigram);
         }

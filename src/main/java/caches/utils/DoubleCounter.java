@@ -56,4 +56,12 @@ public class DoubleCounter<Key1, Key2> {
         counter.forEach(result::add);
         return result;
     }
+
+    public long size() {
+        long result = 0;
+        for (var it : counter.entrySet()) {
+            result += it.getValue().size();
+        }
+        return result;
+    }
 }
