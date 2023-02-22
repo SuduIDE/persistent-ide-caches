@@ -65,6 +65,11 @@ public class ReadUtils {
     }
 
     public static Trigram readTrigram(InputStream is) throws IOException {
-        return new Trigram(readNSymbols(is, 3));
+        byte[] res = new byte[3];
+        if (is.read(res) != 3) {
+            throw new RuntimeException("InputStream hasn't 3 bytes");
+        }
+        return new Trigram(res);
+//        return new Trigram(readNSymbols(is, 3));
     }
 }

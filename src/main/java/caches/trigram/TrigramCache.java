@@ -1,22 +1,21 @@
 package caches.trigram;
 
 import caches.GlobalVariables;
+import caches.lmdb.LmdbInt2Long;
 import caches.records.Revision;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
 
 
 public class TrigramCache {
     public static final String DIRECTORY = ".trigrams/";
     public static final File DATA_FILE = new File(DIRECTORY + ".data");
-    private final Map<Revision, Long> pointers = new HashMap<>();
+    private final LmdbInt2Long pointers = new LmdbInt2Long(GlobalVariables.env, "trigram_pointers");
 
     public void pushCluster(long timestamp, TrigramFileCounter deltas) {
         var revision = GlobalVariables.revisions.getCurrentRevision();
         long size = DATA_FILE.length();
-        pointers.put(revision, size);
+        pointers.put(revision.revision(), size);
         try (FileOutputStream writer = new FileOutputStream(DATA_FILE, true)) {
             writer.write(new TrigramDataFileCluster(deltas).toBytes());
         } catch (IOException e) {
@@ -25,10 +24,10 @@ public class TrigramCache {
     }
 
     public TrigramFileCounter getDataCluster(Revision revision) {
-        if (!pointers.containsKey(revision)) {
+        long pointer = pointers.get(revision.revision());
+        if (pointer == -1) {
             return TrigramFileCounter.EMPTY_COUNTER;
         }
-        long pointer = pointers.get(revision);
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(DATA_FILE, "r")) {
             randomAccessFile.seek(pointer);
             var bufferedInputStream = new BufferedInputStream(new FileInputStream(randomAccessFile.getFD()));

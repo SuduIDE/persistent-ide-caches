@@ -22,7 +22,7 @@ public record TrigramNode(Revision revision, Revision parent, long pointer) {
     }
 
     byte[] toBytes() {
-        var bytes = ByteBuffer.allocate( BYTE_SIZE)
+        var bytes = ByteBuffer.allocate(BYTE_SIZE)
                 .putInt(revision.revision())
                 .putInt(parent.revision())
                 .putLong(pointer);

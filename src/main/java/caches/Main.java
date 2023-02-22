@@ -1,48 +1,62 @@
 package caches;
 
 
-import caches.changes.Change;
+import caches.lmdb.LmdbInt2File;
+import caches.lmdb.LmdbSha12Int;
+import caches.lmdb.LmdbString2Int;
 import caches.records.Revision;
 import caches.trigram.TrigramCache;
 import caches.trigram.TrigramIndex;
+import caches.utils.EchoIndex;
 import org.eclipse.jgit.api.Git;
+import org.lmdbjava.Env;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 
 public class Main {
-    public static void main(String[] args) {
+    private static final SimpleFileVisitor<Path> DELETE = new SimpleFileVisitor<>() {
+        @Override
+        public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+            Files.delete(file);
+            return FileVisitResult.CONTINUE;
+        }
+
+        @Override
+        public FileVisitResult postVisitDirectory(final Path dir, final IOException exc) throws IOException {
+            Files.delete(dir);
+            return FileVisitResult.CONTINUE;
+        }
+    };
+
+    public static void main(String[] args) throws IOException {
         if (args.length < 1) {
             throw new RuntimeException("Needs path to repository as first arg");
         }
         System.out.println(new File(TrigramCache.DIRECTORY).mkdir());
-        Index<String, String> echoIndex = new Index<>() {
-            @Override
-            public String getValue(String s, Revision revision) {
-                System.out.println("Echo: getValue " + s + " from" + revision.revision());
-                return null;
-            }
+//        Files.walkFileTree(Path.of(GlobalVariables.LMDB_DIRECTORY), DELETE);
+        System.out.println(Files.createDirectories(Path.of(GlobalVariables.LMDB_DIRECTORY)));
+        GlobalVariables.env = Env.create()
+                .setMapSize(10_485_760)
+                .setMaxDbs(6)
+                .setMaxReaders(1)
+                .open(new File(GlobalVariables.LMDB_DIRECTORY));
+        GlobalVariables.filesInProject = new LmdbInt2File(GlobalVariables.env, "files");
+        GlobalVariables.gitCommits2Revisions = new LmdbSha12Int(GlobalVariables.env, "git_commits_to_revision");
+        GlobalVariables.variables = new LmdbString2Int(GlobalVariables.env, "variables");
+        GlobalVariables.revisions = new Revisions();
+        GlobalVariables.initFiles();
+        GlobalVariables.restoreFilesFromDB();
 
-            @Override
-            public void checkout(Revision revision) {
-                System.out.println("Echo: checkout to " + revision.revision());
-            }
-
-            @Override
-            public void prepare(List<Change> changes) {
-                System.out.println("Echo: prepare");
-                changes.forEach(System.out::println);
-            }
-
-            @Override
-            public void processChanges(List<Change> changes) {
-                System.out.println("Echo: process");
-                changes.forEach(System.out::println);
-            }
-        };
+        Index<String, String> echoIndex = new EchoIndex();
         TrigramIndex trigramHistoryIndex = new TrigramIndex();
-        final int LIMIT = 1000;
+        final int LIMIT = 150;
         benchmark(() -> {
             try (Git git = Git.open(new File(args[0]))) {
                 var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex), LIMIT);
@@ -50,18 +64,17 @@ public class Main {
             } catch (IOException ioException) {
                 throw new RuntimeException(ioException);
             }
-//            System.out.println("Parsed 1000 commits from git");
         });
-//        System.out.println("Current revision: " + GlobalVariables.revisions.getCurrentRevision());
+        System.out.println("Current revision: " + GlobalVariables.revisions.getCurrentRevision());
 //        trigramHistoryIndex.counter.forEach(System.out::println);
 //        System.out.println(GlobalVariables.revisions.getCurrentRevision());
 //        benchmarkCheckout(new Revision(3), trigramHistoryIndex);
 //        trigramHistoryIndex.counter.forEach(System.out::println);
-        benchmarkCheckout(new Revision(0), trigramHistoryIndex);
-        benchmarkCheckout(new Revision(10), trigramHistoryIndex);
-        benchmarkCheckout(new Revision(100), trigramHistoryIndex);
-        benchmarkCheckout(new Revision(50), trigramHistoryIndex);
-        benchmarkCheckout(new Revision(LIMIT), trigramHistoryIndex);
+//        benchmarkCheckout(new Revision(0), trigramHistoryIndex);
+//        benchmarkCheckout(new Revision(10), trigramHistoryIndex);
+//        benchmarkCheckout(new Revision(100), trigramHistoryIndex);
+//        benchmarkCheckout(new Revision(50), trigramHistoryIndex);
+//        benchmarkCheckout(new Revision(LIMIT - 1), trigramHistoryIndex);
     }
 
     public static void benchmark(Runnable runnable) {

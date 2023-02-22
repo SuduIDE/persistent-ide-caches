@@ -1,7 +1,6 @@
 package caches.utils;
 
 
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -22,6 +21,10 @@ public class Counter<Key> {
 
     public Counter(Map<Key, Integer> counter) {
         this.counter = new HashMap<>(counter);
+    }
+
+    public static <Key> Counter<Key> emptyCounter() {
+        return new Counter<>();
     }
 
     public void add(Key key) {
@@ -74,9 +77,5 @@ public class Counter<Key> {
 
     public void forEach(BiConsumer<Key, Integer> function) {
         counter.forEach(function);
-    }
-
-    public static <Key> Counter<Key> emptyCounter() {
-        return new Counter<>();
     }
 }

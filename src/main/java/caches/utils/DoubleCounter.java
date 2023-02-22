@@ -37,6 +37,7 @@ public class DoubleCounter<Key1, Key2> {
     public void decrease(Key1 key1, Counter<Key2> other) {
         counter.computeIfAbsent(key1, ignore -> new Counter<>()).decrease(other);
     }
+
     public Map<Key1, Counter<Key2>> getAsMap() {
         return counter;
     }

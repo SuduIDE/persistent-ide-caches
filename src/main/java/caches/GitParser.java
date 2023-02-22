@@ -2,6 +2,7 @@ package caches;
 
 import caches.changes.*;
 import caches.records.FilePointer;
+import caches.records.Revision;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
@@ -15,8 +16,6 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
 import org.eclipse.jgit.treewalk.filter.PathSuffixFilter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,12 +26,10 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static caches.GlobalVariables.revisions;
-import static caches.GlobalVariables.tryRegisterNewFile;
+import static caches.GlobalVariables.*;
 
 public class GitParser {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GitParser.class);
     private final Git git;
     private final Repository repository;
     private final List<ChangeProcessor> indexes;
@@ -58,12 +55,17 @@ public class GitParser {
             {
                 ObjectId head = repository.resolve(Constants.HEAD);
                 walk.markStart(walk.parseCommit(head));
-                walk.forEach(commits::add);
+                for (var commit : walk) {
+                    commits.add(commit);
+                    if (gitCommits2Revisions.get(commit.getName()) != -1) {
+                        break;
+                    }
+                    System.out.println(commit.getName());
+                }
             }
             if (!commits.iterator().hasNext()) {
                 throw new RuntimeException("Repository hasn't commits");
             }
-            LOG.info(String.format("%d commits finded to process", commits.size()));
             System.out.printf("%d finded to process%n", commits.size());
             var firstCommit = commits.removeLast();
             parseFirstCommit(firstCommit);
@@ -86,7 +88,7 @@ public class GitParser {
     }
 
 
-    void sendChanges(List<Change> changes) {
+    void sendChanges(List<Change> changes, RevCommit commit) {
         changes.forEach(it -> {
             switch (it) {
                 case FileChange fileChange -> tryRegisterNewFile(fileChange.getPlace().file());
@@ -96,7 +98,13 @@ public class GitParser {
                 }
             }
         });
-        revisions.setCurrentRevision(revisions.addRevision(revisions.getCurrentRevision()));
+        int rev = gitCommits2Revisions.get(commit.getName());
+        if (rev == -1) {
+            revisions.setCurrentRevision(revisions.addRevision(revisions.getCurrentRevision()));
+            gitCommits2Revisions.put(commit.getName(), revisions.getCurrentRevision().revision());
+        } else {
+            revisions.setCurrentRevision(new Revision(rev));
+        }
         indexes.forEach(it -> it.prepare(changes));
     }
 
@@ -109,15 +117,16 @@ public class GitParser {
             tw.setRecursive(true);
             var rawChanges = DiffEntry.scan(tw);
             sendChanges(rawChanges.stream()
-                    .map(it -> {
-                        try {
-                            return processDiff(it);
-                        } catch (IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .flatMap(List::stream)
-                    .collect(Collectors.toList())
+                            .map(it -> {
+                                try {
+                                    return processDiff(it);
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            })
+                            .flatMap(List::stream)
+                            .collect(Collectors.toList()),
+                    commit
             );
         }
     }
@@ -166,6 +175,11 @@ public class GitParser {
     }
 
     private void parseFirstCommit(RevCommit first) {
+        int rev = gitCommits2Revisions.get(first.getName());
+        if (rev != -1) {
+            revisions.setCurrentRevision(new Revision(rev));
+            return;
+        }
         List<Change> changes = new ArrayList<>();
         try (TreeWalk treeWalk = new TreeWalk(repository)) {
             treeWalk.addTree(first.getTree());
@@ -179,6 +193,6 @@ public class GitParser {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        sendChanges(changes);
+        sendChanges(changes, first);
     }
 }

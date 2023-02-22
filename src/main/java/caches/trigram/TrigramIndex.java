@@ -15,15 +15,16 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     public final TrigramCache cache = new TrigramCache();
     public final Preparer preparer = new Preparer();
-    public TrigramFileCounter counter = new TrigramFileCounter();
+    public TrigramFileCounterLmdb counter = new TrigramFileCounterLmdb();
 
-    public TrigramIndex() {}
+    public TrigramIndex() {
+    }
 
     private static TrigramCounter getTrigramsCount(String str) {
-        int[] codePoints = str.codePoints().toArray();
+        byte[] bytes = str.getBytes();
         TrigramCounter result = new TrigramCounter();
-        for (int i = 0; i < codePoints.length - 3; i++) {
-            Trigram trigram = new Trigram(new String(codePoints, i ,3));
+        for (int i = 2; i < bytes.length; i++) {
+            Trigram trigram = new Trigram(new byte[]{bytes[i - 2], bytes[i - 1], bytes[i]});
             result.add(trigram);
         }
         return result;
@@ -47,10 +48,10 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     public Integer getValue(TrigramFile trigramFile, Revision revision) {
         var currentRevision = revisions.getCurrentRevision();
         if (revision.equals(currentRevision)) {
-            return counter.get(trigramFile.file(), trigramFile.trigram());
+            return counter.get(trigramFile.trigram(), trigramFile.file());
         } else {
             checkout(revision);
-            var ans = counter.get(trigramFile.file(), trigramFile.trigram());
+            var ans = counter.get(trigramFile.trigram(), trigramFile.file());
             checkout(currentRevision);
             return ans;
         }
@@ -59,17 +60,16 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     @Override
     public void checkout(Revision targetRevision) {
         var currentRevision = revisions.getCurrentRevision();
-        var targetCounter = counter.copy();
         while (!currentRevision.equals(targetRevision)) {
             if (currentRevision.revision() > targetRevision.revision()) {
-                targetCounter.decrease(cache.getDataCluster(currentRevision));
+                counter.decrease(cache.getDataCluster(currentRevision));
                 currentRevision = revisions.getParent(currentRevision);
             } else {
-                targetCounter.add(cache.getDataCluster(targetRevision));
+                counter.add(cache.getDataCluster(targetRevision));
                 targetRevision = revisions.getParent(targetRevision);
             }
         }
-        counter = targetCounter;
+//        counter = targetCounter;
     }
 
 

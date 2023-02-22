@@ -9,7 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
+
 public record TrigramDataFileCluster(TrigramFileCounter deltas) {
 
     private static final int HEADER_BYTE_SIZE = Integer.BYTES;
@@ -45,13 +45,14 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas) {
     public record TrigramFileDelta(Trigram trigram, File file, int delta) {
 
         public int byteSize() {
-            return trigram.trigram().getBytes(StandardCharsets.UTF_8).length + Integer.BYTES + Integer.BYTES;
+            return trigram.trigram().length + Integer.BYTES + Integer.BYTES;
         }
 
         private void putInBuffer(ByteBuffer byteBuffer) {
-            byteBuffer.put(trigram.trigram().getBytes(StandardCharsets.UTF_8));
+            byteBuffer.put(trigram.trigram());
         }
     }
+
     private record TrigramCounterNode(File file, Counter<Trigram> trigramCounter) {
         public static int byteSize(Counter<Trigram> trigramCounter) {
             return Integer.BYTES + Integer.BYTES +
@@ -65,6 +66,7 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas) {
             byteBuffer.putInt(trigramCounter.getAsMap().size());
             trigramCounter.forEach(((trigram, integer) -> TrigramInteger.putInBuffer(byteBuffer, trigram, integer)));
         }
+
         private static TrigramCounterNode read(InputStream is) throws IOException {
             var fileInt = ReadUtils.readInt(is);
             var file = GlobalVariables.filesInProject.get(fileInt);
@@ -80,11 +82,11 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas) {
 
     private record TrigramInteger(Trigram trigram, int value) {
         private static int sizeOf(Trigram trigram) {
-            return trigram.trigram().getBytes().length + Integer.BYTES;
+            return trigram.trigram().length + Integer.BYTES;
         }
 
         private static void putInBuffer(ByteBuffer byteBuffer, Trigram trigram, int value) {
-            byteBuffer.put(trigram.trigram().getBytes());
+            byteBuffer.put(trigram.trigram());
             byteBuffer.putInt(value);
         }
 
