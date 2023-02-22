@@ -1,5 +1,7 @@
 from collections import Counter
 from sys import argv
+import matplotlib.pyplot as plt
+from math import *
 
 print(argv[1])
 with open(argv[1], "rt") as f:
@@ -35,4 +37,38 @@ with open(argv[1], "rt") as f:
     print("average ratio:", sum_comp / cnt_comp)
     print("average compression:", sum_big / sum_short)
 
-  analyze_cost()
+  def analyze_p2():
+    li = 1
+    ITERS = int(l[li])
+    li += 1
+    lens = []
+    comps = []
+    while li < len(l):
+      p2 = int(l[li])
+      print(p2)
+      li += 1
+      if li + ITERS > len(l):
+        break
+      sum_big = 0
+      sum_short = 0
+      for _ in range(ITERS):
+        big, short = map(int, l[li].split())
+        sum_big += big
+        sum_short += short
+        li += 1
+      comp = sum_big / sum_short
+      print("number of samples:", ITERS)
+      print("average compression:", comp)
+      lens.append(log2(p2))
+      comps.append(log2(sum_big / sum_short))
+    print(lens)
+    print(comps)
+    plt.xticks(list(range(0, 9)))
+    plt.xlabel('log2(Path length)')
+    plt.ylabel('log2(Average compression)')
+    plt.title(f'Average compression over {ITERS} random vertices, xodus (n={n})')
+    plt.scatter(lens, comps)
+    plt.savefig(f'plot-xodus-2.pdf', format='pdf')
+    plt.show()
+
+  analyze_p2()

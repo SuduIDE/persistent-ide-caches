@@ -79,26 +79,66 @@ public class Revisions {
 
         try (var writer = new PrintWriter(new FileWriter(filename), true)) {
             writer.println(n);
-            writer.println(K);
-            for (int i = 0; i < n; i++) {
-                var re = new Revision(i);
-                long single = 0;
-                List<Change> changeList = new ArrayList<>();
-                for (int iter = 0; !re.equals(Revision.NULL) && iter < K; iter++) {
-                    var ch = changes.get(re);
-                    changeList.addAll(ch);
-                    single += calcSize(ch);
-                    re = parents.get(re);
-                    costSingle[i][iter] = single;
-                    costCombined[i][iter] = calcSize(changeList);
+            int ITERS = 250;
+            writer.println(ITERS);
+            Random random = new Random(566);
+            double log = 0;
+            double STEP = 0.5;
+            List<Integer> lens = new ArrayList<>();
+            while (log < 9) {
+                lens.add(Math.max(1, Math.min(n - 1, (int) Math.round(Math.pow(2, log)))));
+                log += STEP;
+            }
+            Collections.sort(lens);
+            for (int i = 0; i < lens.size(); i++) {
+                if (i > 0 && lens.get(i).equals(lens.get(i - 1))) {
+                    continue;
                 }
-                for (int j = 0; j < K; j++) {
-                    writer.println(costSingle[i][j] + " " + costCombined[i][j]);
-                }
-                if (i % 100 == 0) {
-                    System.err.println("Done " + i + " vertices");
+                int step = lens.get(i);
+                System.err.println(step);
+                writer.println(step);
+                for (int it = 0; it < ITERS; it++) {
+                    int v = random.nextInt(n);
+                    while (depth.get(new Revision(v)) < step) {
+                        v = random.nextInt(n);
+                    }
+                    var result = measurePath(new Revision(v), step);
+                    writer.println(result.single + " " + result.combined);
                 }
             }
+//            for (int step = 1; step < n; step++) {
+//                if (step < 10 || step % 10 == 0) {
+//                    System.err.println(step);
+//                    writer.println(step);
+//                    for (int it = 0; it < ITERS; it++) {
+//                        int v = random.nextInt(n);
+//                        while (depth.get(new Revision(v)) < step) {
+//                            v = random.nextInt(n);
+//                        }
+//                        var result = measurePath(new Revision(v), step);
+//                        writer.println(result.single + " " + result.combined);
+//                    }
+//                }
+//            }
+//            for (int i = 0; i < n; i++) {
+//                var re = new Revision(i);
+//                long single = 0;
+//                List<Change> changeList = new ArrayList<>();
+//                for (int iter = 0; !re.equals(Revision.NULL) && iter < K; iter++) {
+//                    var ch = changes.get(re);
+//                    changeList.addAll(ch);
+//                    single += calcSize(ch);
+//                    re = parents.get(re);
+//                    costSingle[i][iter] = single;
+//                    costCombined[i][iter] = calcSize(changeList);
+//                }
+//                for (int j = 0; j < K; j++) {
+//                    writer.println(costSingle[i][j] + " " + costCombined[i][j]);
+//                }
+//                if (i % 100 == 0) {
+//                    System.err.println("Done " + i + " vertices");
+//                }
+//            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
