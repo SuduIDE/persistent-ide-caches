@@ -4,7 +4,7 @@ In order to determine how the future algorithm will perform, it was decided to p
 
 ## Analysis of tree structure
 
-For every beforementioned repository we constructed a tree of all the commits, including all branches. To analyze this tree we calculated the degree distribution of those trees. The results are as follows (degree means the number of children in a tree):
+For every beforementioned repository we constructed a tree of all the commits, including all branches. To analyze this tree we calculated the degree distribution of vertices of these trees. The results are as follows (degree means the number of children of a commit in the tree):
 
 ### Xodus
 
