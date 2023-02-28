@@ -3,6 +3,7 @@ package caches.trigram;
 import caches.GlobalVariables;
 import caches.lmdb.LmdbInt2Long;
 import caches.records.Revision;
+import caches.utils.TriConsumer;
 
 import java.io.*;
 
@@ -23,16 +24,15 @@ public class TrigramCache {
         }
     }
 
-    public TrigramFileCounter getDataCluster(Revision revision) {
+    public void processDataCluster(Revision revision, TriConsumer<byte[], Integer, Integer> consumer) {
         long pointer = pointers.get(revision.revision());
         if (pointer == -1) {
-            return TrigramFileCounter.EMPTY_COUNTER;
+            return;
         }
         try (RandomAccessFile randomAccessFile = new RandomAccessFile(DATA_FILE, "r")) {
             randomAccessFile.seek(pointer);
             var bufferedInputStream = new BufferedInputStream(new FileInputStream(randomAccessFile.getFD()));
-            TrigramDataFileCluster cluster = TrigramDataFileCluster.readTrigramDataFileCluster(bufferedInputStream);
-            return cluster.deltas();
+            TrigramDataFileCluster.readTrigramDataFileCluster(bufferedInputStream, consumer);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

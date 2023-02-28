@@ -60,7 +60,6 @@ public class GitParser {
                     if (gitCommits2Revisions.get(commit.getName()) != -1) {
                         break;
                     }
-                    System.out.println(commit.getName());
                 }
             }
             if (!commits.iterator().hasNext()) {

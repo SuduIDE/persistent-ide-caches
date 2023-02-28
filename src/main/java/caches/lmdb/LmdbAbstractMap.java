@@ -19,7 +19,7 @@ public abstract class LmdbAbstractMap implements Closeable {
         db = env.openDbi(dbName, DbiFlags.MDB_CREATE);
     }
 
-    public LmdbAbstractMap(Env<ByteBuffer> env, Dbi<ByteBuffer> db) {
+    protected LmdbAbstractMap(Env<ByteBuffer> env, Dbi<ByteBuffer> db) {
         this.env = env;
         this.db = db;
     }

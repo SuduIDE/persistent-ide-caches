@@ -1,5 +1,6 @@
 package caches.trigram;
 
+import caches.GlobalVariables;
 import caches.Index;
 import caches.changes.*;
 import caches.records.Revision;
@@ -59,15 +60,20 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     @Override
     public void checkout(Revision targetRevision) {
-        var currentRevision = revisions.getCurrentRevision();
-        while (!currentRevision.equals(targetRevision)) {
-            if (currentRevision.revision() > targetRevision.revision()) {
-                counter.decrease(cache.getDataCluster(currentRevision));
-                currentRevision = revisions.getParent(currentRevision);
-            } else {
-                counter.add(cache.getDataCluster(targetRevision));
-                targetRevision = revisions.getParent(targetRevision);
+        try (var txn = GlobalVariables.env.txnWrite()) {
+            var currentRevision = revisions.getCurrentRevision();
+            while (!currentRevision.equals(targetRevision)) {
+                if (currentRevision.revision() > targetRevision.revision()) {
+                    cache.processDataCluster(currentRevision,
+                            (bytes, file, d) -> counter.decreaseIt(txn, bytes, file, d));
+                    currentRevision = revisions.getParent(currentRevision);
+                } else {
+                    cache.processDataCluster(targetRevision,
+                            (bytes, file, d) -> counter.addIt(txn, bytes, file, d));
+                    targetRevision = revisions.getParent(targetRevision);
+                }
             }
+            txn.commit();
         }
 //        counter = targetCounter;
     }

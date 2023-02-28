@@ -2,28 +2,31 @@ package caches.trigram;
 
 import caches.GlobalVariables;
 import caches.records.Trigram;
-import caches.utils.Counter;
 import caches.utils.ReadUtils;
+import caches.utils.TriConsumer;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public record TrigramDataFileCluster(TrigramFileCounter deltas) {
 
     private static final int HEADER_BYTE_SIZE = Integer.BYTES;
 
-    public static TrigramDataFileCluster readTrigramDataFileCluster(InputStream is) {
+    public static void readTrigramDataFileCluster(InputStream is,
+                                                  TriConsumer<byte[], Integer, Integer> consumer) {
         try {
             var size = ReadUtils.readInt(is);
             TrigramFileCounter deltas = new TrigramFileCounter();
             for (int i = 0; i < size; i++) {
-                var it = TrigramCounterNode.read(is);
-                deltas.getAsMap().put(it.file(), it.trigramCounter());
+                TrigramCounterNode.read(is, consumer);
 //                deltas.add(it.file(), it.trigramCounter());
             }
-            return new TrigramDataFileCluster(deltas);
         } catch (IOException e) {
             throw new RuntimeException("Error on reading node", e);
         }
@@ -31,12 +34,15 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas) {
 
     byte[] toBytes() {
         int size = HEADER_BYTE_SIZE;
-        for (var it : deltas.getAsMap().entrySet()) {
+        Map<File, List<TrigramInteger>> groupedDelta = new HashMap<>();
+        deltas.forEach(((trigram, file, integer) -> groupedDelta.computeIfAbsent(file, (ignore) -> new ArrayList<>())));
+        deltas.forEach(((trigram, file, integer) -> groupedDelta.get(file).add(new TrigramInteger(trigram, integer))));
+        for (var it : groupedDelta.entrySet()) {
             size += TrigramCounterNode.byteSize(it.getValue());
         }
         var bytes = ByteBuffer.allocate(size)
-                .putInt(deltas.getAsMap().size());
-        for (var it : deltas.getAsMap().entrySet()) {
+                .putInt(groupedDelta.size());
+        for (var it : groupedDelta.entrySet()) {
             TrigramCounterNode.putInBuffer(bytes, it.getKey(), it.getValue());
         }
         return bytes.array();
@@ -53,47 +59,44 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas) {
         }
     }
 
-    private record TrigramCounterNode(File file, Counter<Trigram> trigramCounter) {
-        public static int byteSize(Counter<Trigram> trigramCounter) {
+    private record TrigramCounterNode(File file, List<TrigramInteger> trigramCounter) {
+        public static int byteSize(List<TrigramInteger> trigramCounter) {
             return Integer.BYTES + Integer.BYTES +
-                    trigramCounter.getAsMap().keySet().stream()
+                    trigramCounter.stream()
                             .mapToInt(TrigramInteger::sizeOf)
                             .sum();
         }
 
-        private static void putInBuffer(ByteBuffer byteBuffer, File file, Counter<Trigram> trigramCounter) {
+        private static void putInBuffer(ByteBuffer byteBuffer, File file, List<TrigramInteger> trigramCounter) {
             byteBuffer.putInt(GlobalVariables.reverseFilesInProject.get(file));
-            byteBuffer.putInt(trigramCounter.getAsMap().size());
-            trigramCounter.forEach(((trigram, integer) -> TrigramInteger.putInBuffer(byteBuffer, trigram, integer)));
+            byteBuffer.putInt(trigramCounter.size());
+            trigramCounter.forEach(((it) -> it.putInBuffer(byteBuffer)));
         }
 
-        private static TrigramCounterNode read(InputStream is) throws IOException {
+        private static void read(InputStream is, TriConsumer<byte[], Integer, Integer> consumer) throws IOException {
             var fileInt = ReadUtils.readInt(is);
-            var file = GlobalVariables.filesInProject.get(fileInt);
             var size = ReadUtils.readInt(is);
-            var counter = new TrigramCounter();
             for (int i = 0; i < size; i++) {
-                var it = TrigramInteger.read(is);
-                counter.add(it.trigram, it.value);
+                TrigramInteger.read(is, consumer, fileInt);
             }
-            return new TrigramCounterNode(file, counter);
         }
     }
 
     private record TrigramInteger(Trigram trigram, int value) {
-        private static int sizeOf(Trigram trigram) {
+        private int sizeOf() {
             return trigram.trigram().length + Integer.BYTES;
         }
 
-        private static void putInBuffer(ByteBuffer byteBuffer, Trigram trigram, int value) {
+        private void putInBuffer(ByteBuffer byteBuffer) {
             byteBuffer.put(trigram.trigram());
             byteBuffer.putInt(value);
         }
 
-        private static TrigramInteger read(InputStream is) throws IOException {
-            var trigram = ReadUtils.readTrigram(is);
+        private static void read(InputStream is, TriConsumer<byte[], Integer, Integer> consumer, int fileInt)
+                throws IOException {
+            var trigram = ReadUtils.readBytes(is, 3);
             var delta = ReadUtils.readInt(is);
-            return new TrigramInteger(trigram, delta);
+            consumer.accept(trigram, fileInt, delta);
         }
     }
 }

@@ -1,7 +1,5 @@
 package caches.utils;
 
-import caches.records.Trigram;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -64,12 +62,12 @@ public class ReadUtils {
 
     }
 
-    public static Trigram readTrigram(InputStream is) throws IOException {
-        byte[] res = new byte[3];
-        if (is.read(res) != 3) {
+    public static byte[] readBytes(InputStream is, int size) throws IOException {
+        byte[] res = new byte[size];
+        if (is.read(res) != size) {
             throw new RuntimeException("InputStream hasn't 3 bytes");
         }
-        return new Trigram(res);
+        return res;
 //        return new Trigram(readNSymbols(is, 3));
     }
 }

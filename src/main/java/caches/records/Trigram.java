@@ -5,8 +5,8 @@ import java.util.Objects;
 
 public record Trigram(byte[] trigram) {
 
-    public int toInt() {
-        return (trigram[0] << 8 + trigram[1]) << 8 + trigram[2];
+    public static long toLong(byte[] bytes) {
+        return (bytes[0] << 8 + bytes[1]) << 8 + bytes[2];
     }
 
     @Override

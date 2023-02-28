@@ -5,7 +5,6 @@ import caches.lmdb.LmdbInt2File;
 import caches.lmdb.LmdbSha12Int;
 import caches.lmdb.LmdbString2Int;
 import caches.records.Revision;
-import caches.trigram.TrigramCache;
 import caches.trigram.TrigramIndex;
 import caches.utils.EchoIndex;
 import org.eclipse.jgit.api.Git;
@@ -39,9 +38,9 @@ public class Main {
         if (args.length < 1) {
             throw new RuntimeException("Needs path to repository as first arg");
         }
-        System.out.println(new File(TrigramCache.DIRECTORY).mkdir());
+//        System.out.println(new File(TrigramCache.DIRECTORY).mkdir());
 //        Files.walkFileTree(Path.of(GlobalVariables.LMDB_DIRECTORY), DELETE);
-        System.out.println(Files.createDirectories(Path.of(GlobalVariables.LMDB_DIRECTORY)));
+//        System.out.println(Files.createDirectories(Path.of(GlobalVariables.LMDB_DIRECTORY)));
         GlobalVariables.env = Env.create()
                 .setMapSize(10_485_760)
                 .setMaxDbs(6)
@@ -53,10 +52,9 @@ public class Main {
         GlobalVariables.revisions = new Revisions();
         GlobalVariables.initFiles();
         GlobalVariables.restoreFilesFromDB();
-
         Index<String, String> echoIndex = new EchoIndex();
         TrigramIndex trigramHistoryIndex = new TrigramIndex();
-        final int LIMIT = 150;
+        final int LIMIT = 10;
         benchmark(() -> {
             try (Git git = Git.open(new File(args[0]))) {
                 var parser = new GitParser(git, List.of(/*echoIndex,*/ trigramHistoryIndex), LIMIT);
@@ -67,8 +65,8 @@ public class Main {
         });
         System.out.println("Current revision: " + GlobalVariables.revisions.getCurrentRevision());
 //        trigramHistoryIndex.counter.forEach(System.out::println);
-//        System.out.println(GlobalVariables.revisions.getCurrentRevision());
-//        benchmarkCheckout(new Revision(3), trigramHistoryIndex);
+        System.out.println(GlobalVariables.revisions.getCurrentRevision());
+        benchmarkCheckout(new Revision(0), trigramHistoryIndex);
 //        trigramHistoryIndex.counter.forEach(System.out::println);
 //        benchmarkCheckout(new Revision(0), trigramHistoryIndex);
 //        benchmarkCheckout(new Revision(10), trigramHistoryIndex);
