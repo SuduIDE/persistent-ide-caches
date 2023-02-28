@@ -121,4 +121,8 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
             }
         }
     }
+
+    TrigramFileCounterLmdb getCounter() {
+        return counter;
+    }
 }

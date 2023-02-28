@@ -6,7 +6,6 @@ import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public abstract class LmdbAbstractMap implements Closeable {
@@ -53,7 +52,7 @@ public abstract class LmdbAbstractMap implements Closeable {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         db.close();
     }
 }

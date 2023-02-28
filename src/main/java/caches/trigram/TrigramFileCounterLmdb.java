@@ -4,6 +4,7 @@ import caches.GlobalVariables;
 import caches.lmdb.LmdbLong2IntCounter;
 import caches.records.LongInt;
 import caches.records.Trigram;
+import caches.utils.TriConsumer;
 import org.lmdbjava.Txn;
 
 import java.io.File;
@@ -25,8 +26,9 @@ public class TrigramFileCounterLmdb {
     private long getKey(Trigram trigram, File file) {
         return getKey(trigram.trigram(), GlobalVariables.reverseFilesInProject.get(file));
     }
+
     private long getKey(byte[] trigram, int file) {
-        return Trigram.toLong(trigram) << Integer.SIZE + file;
+        return (Trigram.toLong(trigram) << Integer.SIZE) + file;
     }
 
     public void add(TrigramFileCounter counter) {
@@ -50,5 +52,23 @@ public class TrigramFileCounterLmdb {
 
     public void decreaseIt(Txn<ByteBuffer> txn, byte[] bytes, Integer file, int delta) {
         db.decrease(txn, getKey(bytes, file), delta);
+    }
+
+    public List<File> getFilesForTrigram(Trigram trigram) {
+        List<File> list = new ArrayList<>();
+        db.forEachFromTo((trigramFileLong, val) -> {
+                    if (val > 0)
+                        list.add(GlobalVariables.filesInProject.get(trigramFileLong.intValue()));
+                },
+                trigram.toLong() << Integer.SIZE,
+                (trigram.toLong() + 1) << Integer.SIZE);
+        return list;
+    }
+
+    public void forEach(TriConsumer<Trigram, File, Integer> consumer) {
+        db.forEach((l, i) ->
+                        consumer.accept(new Trigram(l >> Integer.SIZE),
+                                GlobalVariables.filesInProject.get(l.intValue()),
+                                i));
     }
 }
