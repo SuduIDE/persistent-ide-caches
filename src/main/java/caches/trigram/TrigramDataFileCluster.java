@@ -1,6 +1,6 @@
 package caches.trigram;
 
-import caches.GlobalVariables;
+import caches.FileCache;
 import caches.records.Trigram;
 import caches.utils.ReadUtils;
 import caches.utils.TriConsumer;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public record TrigramDataFileCluster(TrigramFileCounter deltas) {
+public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCache) {
 
     private static final int HEADER_BYTE_SIZE = Integer.BYTES;
 
@@ -43,7 +43,7 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas) {
         var bytes = ByteBuffer.allocate(size)
                 .putInt(groupedDelta.size());
         for (var it : groupedDelta.entrySet()) {
-            TrigramCounterNode.putInBuffer(bytes, it.getKey(), it.getValue());
+            TrigramCounterNode.putInBuffer(bytes, fileCache.getNumber(it.getKey()), it.getValue());
         }
         return bytes.array();
     }
@@ -67,8 +67,8 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas) {
                             .sum();
         }
 
-        private static void putInBuffer(ByteBuffer byteBuffer, File file, List<TrigramInteger> trigramCounter) {
-            byteBuffer.putInt(GlobalVariables.reverseFilesInProject.get(file));
+        private static void putInBuffer(ByteBuffer byteBuffer, int fileInt, List<TrigramInteger> trigramCounter) {
+            byteBuffer.putInt(fileInt);
             byteBuffer.putInt(trigramCounter.size());
             trigramCounter.forEach(((it) -> it.putInBuffer(byteBuffer)));
         }

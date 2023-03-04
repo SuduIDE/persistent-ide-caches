@@ -1,6 +1,7 @@
 package caches;
 
 import caches.changes.*;
+import caches.lmdb.LmdbSha12Int;
 import caches.records.FilePointer;
 import caches.records.Revision;
 import org.eclipse.jgit.api.Git;
@@ -26,27 +27,27 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static caches.GlobalVariables.*;
 
 public class GitParser {
 
-    private final Git git;
     private final Repository repository;
     private final List<ChangeProcessor> indexes;
     private final int commitsLimit;
+    private final LmdbSha12Int gitCommits2Revisions;
+    private final Revisions revisions;
+    private final FileCache fileCache;
 
-    public GitParser(Git git, List<ChangeProcessor> indices) {
-        this.git = git;
-        repository = git.getRepository();
-        this.indexes = indices;
-        this.commitsLimit = Integer.MAX_VALUE;
+    public GitParser(Git git, List<ChangeProcessor> indices, LmdbSha12Int gitCommits2Revisions, Revisions revisions, FileCache fileCache) {
+        this(git, indices, gitCommits2Revisions, revisions, fileCache, Integer.MAX_VALUE);
     }
 
-    public GitParser(Git git, List<ChangeProcessor> indices, int commitsLimit) {
-        this.git = git;
+    public GitParser(Git git, List<ChangeProcessor> indices, LmdbSha12Int gitCommits2Revisions, Revisions revisions, FileCache fileCache, int commitsLimit) {
         repository = git.getRepository();
         this.indexes = indices;
+        this.revisions = revisions;
+        this.fileCache = fileCache;
         this.commitsLimit = commitsLimit;
+        this.gitCommits2Revisions = gitCommits2Revisions;
     }
 
     public void parse() {
@@ -90,10 +91,10 @@ public class GitParser {
     void sendChanges(List<Change> changes, RevCommit commit) {
         changes.forEach(it -> {
             switch (it) {
-                case FileChange fileChange -> tryRegisterNewFile(fileChange.getPlace().file());
+                case FileChange fileChange -> fileCache.tryRegisterNewFile(fileChange.getPlace().file());
                 case FileHolderChange fileHolderChange -> {
-                    tryRegisterNewFile(fileHolderChange.getOldFileName());
-                    tryRegisterNewFile(fileHolderChange.getNewFileName());
+                    fileCache.tryRegisterNewFile(fileHolderChange.getOldFileName());
+                    fileCache.tryRegisterNewFile(fileHolderChange.getNewFileName());
                 }
             }
         });

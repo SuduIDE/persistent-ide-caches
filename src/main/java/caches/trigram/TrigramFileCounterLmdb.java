@@ -1,10 +1,11 @@
 package caches.trigram;
 
-import caches.GlobalVariables;
+import caches.FileCache;
 import caches.lmdb.LmdbLong2IntCounter;
 import caches.records.LongInt;
 import caches.records.Trigram;
 import caches.utils.TriConsumer;
+import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
 import java.io.File;
@@ -13,10 +14,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class TrigramFileCounterLmdb {
+    private final FileCache fileCache;
     private final LmdbLong2IntCounter db;
 
-    public TrigramFileCounterLmdb() {
-        db = new LmdbLong2IntCounter(GlobalVariables.env, "trigram_file_counter");
+    public TrigramFileCounterLmdb(Env<ByteBuffer> env, FileCache fileCache) {
+        db = new LmdbLong2IntCounter(env, "trigram_file_counter");
+        this.fileCache = fileCache;
     }
 
     public int get(Trigram trigram, File file) {
@@ -24,7 +27,7 @@ public class TrigramFileCounterLmdb {
     }
 
     private long getKey(Trigram trigram, File file) {
-        return getKey(trigram.trigram(), GlobalVariables.reverseFilesInProject.get(file));
+        return getKey(trigram.trigram(), fileCache.getNumber(file));
     }
 
     private long getKey(byte[] trigram, int file) {
@@ -58,7 +61,7 @@ public class TrigramFileCounterLmdb {
         List<File> list = new ArrayList<>();
         db.forEachFromTo((trigramFileLong, val) -> {
                     if (val > 0)
-                        list.add(GlobalVariables.filesInProject.get(trigramFileLong.intValue()));
+                        list.add(fileCache.getFile(trigramFileLong.intValue()));
                 },
                 trigram.toLong() << Integer.SIZE,
                 (trigram.toLong() + 1) << Integer.SIZE);
@@ -68,7 +71,7 @@ public class TrigramFileCounterLmdb {
     public void forEach(TriConsumer<Trigram, File, Integer> consumer) {
         db.forEach((l, i) ->
                         consumer.accept(new Trigram(l >> Integer.SIZE),
-                                GlobalVariables.filesInProject.get(l.intValue()),
+                                fileCache.getFile(l.intValue()),
                                 i));
     }
 }

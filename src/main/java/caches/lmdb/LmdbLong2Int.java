@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 
 public class LmdbLong2Int extends LmdbAbstractMap {
     public LmdbLong2Int(Env<ByteBuffer> env, String dbName) {
-        super(env, env.openDbi(dbName, DbiFlags.MDB_CREATE, DbiFlags.MDB_INTEGERKEY));
+        super(env, env.openDbi(dbName, DbiFlags.MDB_CREATE));
     }
 
     public void put(long key, int value) {

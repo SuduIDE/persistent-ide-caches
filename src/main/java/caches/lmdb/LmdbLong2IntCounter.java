@@ -15,8 +15,15 @@ public class LmdbLong2IntCounter extends LmdbLong2Int {
         super(env, dbName);
     }
 
+
+    private ByteBuffer allocateReverseLong(long l) {
+        // It's not writing
+//        return allocateLong(Long.reverseBytes(l));
+        return allocateLong(l);
+    }
+
     public int countGet(long key) {
-        ByteBuffer res = getImpl(allocateLong(key));
+        ByteBuffer res = getImpl(allocateReverseLong(key));
         return res == null ? 0 : res.getInt();
     }
 
@@ -35,7 +42,7 @@ public class LmdbLong2IntCounter extends LmdbLong2Int {
     }
 
     public void add(Txn<ByteBuffer> txn, long key, int delta) {
-        var keyBytes = allocateLong(key);
+        var keyBytes = allocateReverseLong(key);
         var found = db.get(txn, keyBytes);
         var val = found == null ? 0 : txn.val().getInt();
         db.put(txn, keyBytes, allocateInt(val + delta));
@@ -48,9 +55,10 @@ public class LmdbLong2IntCounter extends LmdbLong2Int {
     public void forEachFromTo(BiConsumer<Long, Integer> consumer, long from, long to) {
         try (var txn = env.txnRead()) {
             try (CursorIterable<ByteBuffer> ci = db.iterate(txn,
-                    KeyRange.closedOpen(allocateLong(from), allocateLong(to)))) {
+                    KeyRange.closedOpen(allocateReverseLong(from), allocateReverseLong(to)))) {
                 for (final CursorIterable.KeyVal<ByteBuffer> kv : ci) {
-                    consumer.accept(kv.key().getLong(), kv.val().getInt());
+                    long key = kv.key().getLong();
+                    consumer.accept(key, kv.val().getInt());
                 }
             }
         }

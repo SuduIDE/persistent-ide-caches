@@ -1,21 +1,27 @@
 package caches;
 
 import caches.lmdb.LmdbInt2Int;
+import caches.lmdb.LmdbString2Int;
 import caches.records.Revision;
 
 public class Revisions {
     public static final String REVISIONS_COUNT = "revisions_count";
     public static final String CURRENT_REVISION = "current_revision";
-    private final LmdbInt2Int parents = new LmdbInt2Int(GlobalVariables.env, "revisions");
-    private Revision currentRevision = new Revision(GlobalVariables.variables.get(CURRENT_REVISION));
-    private int revisionsCount = GlobalVariables.variables.get(REVISIONS_COUNT);
+    private Revision currentRevision;
+    private int revisionsCount;
+    private final LmdbString2Int variables;
+    private final LmdbInt2Int parents;
 
-    public Revisions() {
+    public Revisions(LmdbString2Int variables, LmdbInt2Int parents) {
+        this.variables = variables;
+        this.parents = parents;
+        revisionsCount = variables.get(REVISIONS_COUNT);
         if (revisionsCount == -1) {
-            GlobalVariables.variables.put(REVISIONS_COUNT, 0);
+            variables.put(REVISIONS_COUNT, 0);
         }
+        currentRevision = new Revision(variables.get(CURRENT_REVISION));
         if (currentRevision.revision() == -1) {
-            GlobalVariables.variables.put(CURRENT_REVISION, 0);
+            variables.put(CURRENT_REVISION, 0);
         }
     }
 
@@ -46,10 +52,10 @@ public class Revisions {
     }
 
     private void updateCurrentRevision() {
-        GlobalVariables.variables.put(CURRENT_REVISION, currentRevision.revision());
+        variables.put(CURRENT_REVISION, currentRevision.revision());
     }
 
     private void updateRevisionsCount() {
-        GlobalVariables.variables.put(REVISIONS_COUNT, revisionsCount);
+        variables.put(REVISIONS_COUNT, revisionsCount);
     }
 }

@@ -19,7 +19,7 @@ public record Trigram(byte[] trigram) implements Comparable<Trigram> {
     }
 
     public static int toInt(byte[] bytes) {
-        return ((((((int) bytes[0]) << 8) + bytes[1])) << 8) + bytes[2];
+        return (((((Math.abs(bytes[0])) << 8) + Math.abs(bytes[1]))) << 8) + Math.abs(bytes[2]);
     }
 
     public int toInt() {

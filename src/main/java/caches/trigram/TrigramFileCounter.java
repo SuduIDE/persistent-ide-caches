@@ -10,10 +10,14 @@ import java.util.Map;
 
 public class TrigramFileCounter {
     public static final TrigramFileCounter EMPTY_COUNTER = new TrigramFileCounter();
-    private final HashMap<TrigramFile, Integer> map;
+    private final Map<TrigramFile, Integer> map;
 
     public TrigramFileCounter() {
         map = new HashMap<>();
+    }
+
+    public TrigramFileCounter(Map<TrigramFile, Integer> map) {
+        this.map = map;
     }
 
     public void add(Trigram trigram, File file, int delta) {

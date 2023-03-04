@@ -1,24 +1,35 @@
 package caches.trigram;
 
-import caches.GlobalVariables;
+import caches.FileCache;
 import caches.Index;
+import caches.Revisions;
 import caches.changes.*;
+import caches.lmdb.LmdbInt2Long;
 import caches.records.Revision;
 import caches.records.Trigram;
 import caches.records.TrigramFile;
+import org.lmdbjava.Env;
 
+import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static caches.GlobalVariables.revisions;
 
 public class TrigramIndex implements Index<TrigramFile, Integer> {
 
-    public final TrigramCache cache = new TrigramCache();
-    public final Preparer preparer = new Preparer();
-    public TrigramFileCounterLmdb counter = new TrigramFileCounterLmdb();
+    private final Env<ByteBuffer> env;
+    private final TrigramCache cache;
+    private final Preparer preparer = new Preparer();
+    private final Revisions revisions;
+    private final TrigramFileCounterLmdb counter;
 
-    public TrigramIndex() {
+
+    public TrigramIndex(Env<ByteBuffer> env, FileCache fileCache, Revisions revisions) {
+        this.env = env;
+        cache = new TrigramCache(revisions, new LmdbInt2Long(env, "trigram_pointers"), fileCache);
+        this.revisions = revisions;
+        counter = new TrigramFileCounterLmdb(this.env, fileCache);
     }
 
     private static TrigramCounter getTrigramsCount(String str) {
@@ -60,7 +71,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     @Override
     public void checkout(Revision targetRevision) {
-        try (var txn = GlobalVariables.env.txnWrite()) {
+        try (var txn = env.txnWrite()) {
             var currentRevision = revisions.getCurrentRevision();
             while (!currentRevision.equals(targetRevision)) {
                 if (currentRevision.revision() > targetRevision.revision()) {
@@ -75,7 +86,6 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
             }
             txn.commit();
         }
-//        counter = targetCounter;
     }
 
 
@@ -84,7 +94,10 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
         public void process(List<Change> changes) {
             var delta = new TrigramFileCounter();
             changes.forEach(it -> countChange(it, delta));
-            counter.add(delta);
+            var filteredDelta = new TrigramFileCounter(delta.getAsMap().entrySet().stream()
+                    .filter(it -> it.getValue() > 0)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+            counter.add(filteredDelta);
             if (!changes.isEmpty()) pushActions(delta, changes.get(0).getTimestamp());
         }
 
@@ -122,7 +135,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
         }
     }
 
-    TrigramFileCounterLmdb getCounter() {
+    public TrigramFileCounterLmdb getCounter() {
         return counter;
     }
 }
