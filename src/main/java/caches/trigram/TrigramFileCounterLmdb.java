@@ -70,8 +70,8 @@ public class TrigramFileCounterLmdb {
 
     public void forEach(TriConsumer<Trigram, File, Integer> consumer) {
         db.forEach((l, i) ->
-                        consumer.accept(new Trigram(l >> Integer.SIZE),
-                                fileCache.getFile(l.intValue()),
-                                i));
+                consumer.accept(new Trigram(l >> Integer.SIZE),
+                        fileCache.getFile(l.intValue()),
+                        i));
     }
 }

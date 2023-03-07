@@ -22,13 +22,14 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     private final TrigramCache cache;
     private final Revisions revisions;
     private final TrigramFileCounterLmdb counter;
-
+    private final TrigramIndexUtils trigramIndexUtils;
 
     public TrigramIndex(Env<ByteBuffer> env, FileCache fileCache, Revisions revisions) {
         this.env = env;
         cache = new TrigramCache(revisions, new LmdbInt2Long(env, "trigram_pointers"), fileCache);
         this.revisions = revisions;
         counter = new TrigramFileCounterLmdb(this.env, fileCache);
+        trigramIndexUtils = new TrigramIndexUtils(this);
     }
 
     private static TrigramCounter getTrigramsCount(String str) {
@@ -39,6 +40,10 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
             result.add(trigram);
         }
         return result;
+    }
+
+    public TrigramIndexUtils getTrigramIndexUtils() {
+        return trigramIndexUtils;
     }
 
     @Override

@@ -5,9 +5,10 @@ import caches.records.Trigram;
 import java.io.File;
 import java.util.*;
 
-public class TrigramIndexManager {
+public class TrigramIndexUtils {
     private final TrigramIndex trigramIndex;
-    public TrigramIndexManager(TrigramIndex trigramIndex) {
+
+    public TrigramIndexUtils(TrigramIndex trigramIndex) {
         this.trigramIndex = trigramIndex;
     }
 

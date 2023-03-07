@@ -83,6 +83,13 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
     }
 
     private record TrigramInteger(Trigram trigram, int value) {
+        private static void read(InputStream is, TriConsumer<byte[], Integer, Integer> consumer, int fileInt)
+                throws IOException {
+            var trigram = ReadUtils.readBytes(is, 3);
+            var delta = ReadUtils.readInt(is);
+            consumer.accept(trigram, fileInt, delta);
+        }
+
         private int sizeOf() {
             return trigram.trigram().length + Integer.BYTES;
         }
@@ -90,13 +97,6 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
         private void putInBuffer(ByteBuffer byteBuffer) {
             byteBuffer.put(trigram.trigram());
             byteBuffer.putInt(value);
-        }
-
-        private static void read(InputStream is, TriConsumer<byte[], Integer, Integer> consumer, int fileInt)
-                throws IOException {
-            var trigram = ReadUtils.readBytes(is, 3);
-            var delta = ReadUtils.readInt(is);
-            consumer.accept(trigram, fileInt, delta);
         }
     }
 }

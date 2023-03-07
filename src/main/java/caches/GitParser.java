@@ -8,8 +8,8 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
-import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -17,6 +17,8 @@ import org.eclipse.jgit.treewalk.TreeWalk;
 import org.eclipse.jgit.treewalk.filter.AndTreeFilter;
 import org.eclipse.jgit.treewalk.filter.IndexDiffFilter;
 import org.eclipse.jgit.treewalk.filter.PathSuffixFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,18 +32,20 @@ import java.util.stream.Collectors;
 
 public class GitParser {
 
+    private static final Logger LOG = LoggerFactory.getLogger(GitParser.class);
     private final Repository repository;
-    private final List<ChangeProcessor> indexes;
+    private final List<Index<?, ?>> indexes;
     private final int commitsLimit;
+    public static final boolean PARSE_ONLY_TREE = false;
     private final LmdbSha12Int gitCommits2Revisions;
-    private final Revisions revisions;
     private final FileCache fileCache;
+    private final Revisions revisions;
 
-    public GitParser(Git git, List<ChangeProcessor> indices, LmdbSha12Int gitCommits2Revisions, Revisions revisions, FileCache fileCache) {
+    public GitParser(Git git, List<Index<?, ?>> indices, LmdbSha12Int gitCommits2Revisions, Revisions revisions, FileCache fileCache) {
         this(git, indices, gitCommits2Revisions, revisions, fileCache, Integer.MAX_VALUE);
     }
 
-    public GitParser(Git git, List<ChangeProcessor> indices, LmdbSha12Int gitCommits2Revisions, Revisions revisions, FileCache fileCache, int commitsLimit) {
+    public GitParser(Git git, List<Index<?, ?>> indices, LmdbSha12Int gitCommits2Revisions, Revisions revisions, FileCache fileCache, int commitsLimit) {
         repository = git.getRepository();
         this.indexes = indices;
         this.revisions = revisions;
@@ -50,15 +54,28 @@ public class GitParser {
         this.gitCommits2Revisions = gitCommits2Revisions;
     }
 
-    public void parse() {
+
+    public void parseAll() throws IOException {
+        var refs = repository.getRefDatabase().getRefs();
+        System.err.println("Parsing " + refs.size() + " refs");
+        int cnt = 0;
+        for (Ref ref : refs) {
+            parseOne(ref.getObjectId());
+            System.err.println("Parsed " + (++cnt) + "/" + refs.size() + " refs");
+        }
+    }
+
+    public void parseOne(ObjectId head) {
+        LOG.info("Parsing ref: " + head.getName());
         try (RevWalk walk = new RevWalk(repository)) {
             Deque<RevCommit> commits = new ArrayDeque<>();
+            RevCommit firstCommit = null;
             {
-                ObjectId head = repository.resolve(Constants.HEAD);
                 walk.markStart(walk.parseCommit(head));
                 for (var commit : walk) {
                     commits.add(commit);
                     if (gitCommits2Revisions.get(commit.getName()) != -1) {
+                        firstCommit = commit;
                         break;
                     }
                 }
@@ -66,10 +83,20 @@ public class GitParser {
             if (!commits.iterator().hasNext()) {
                 throw new RuntimeException("Repository hasn't commits");
             }
-            System.out.printf("%d finded to process%n", commits.size());
-            var firstCommit = commits.removeLast();
-            parseFirstCommit(firstCommit);
+            LOG.info(String.format("%d commits found to process", commits.size()));
+
+            if (firstCommit == null) {
+                revisions.setCurrentRevision(Revision.NULL);
+                indexes.forEach(i -> i.checkout(Revision.NULL));
+                firstCommit = commits.removeLast();
+                parseFirstCommit(firstCommit);
+            } else {
+                var rev = new Revision(gitCommits2Revisions.get(firstCommit.getName()));
+                revisions.setCurrentRevision(rev);
+                indexes.forEach(i -> i.checkout(rev));
+            }
             var prevCommit = firstCommit;
+
             int commitsParsed = 0;
             int totalCommits = Math.min(commitsLimit, commits.size());
             while (commitsParsed < totalCommits) {
