@@ -40,6 +40,11 @@ public class TrigramFileCounter {
         map.forEach(((trigramFile, integer) -> consumer.accept(trigramFile.trigram(), trigramFile.file(), integer)));
     }
 
+    public int get(Trigram trigram, File file) {
+        Integer result = map.get(new TrigramFile(trigram, file));
+        return result == null ? 0 : result;
+    }
+
     public Map<TrigramFile, Integer> getAsMap() {
         return map;
     }

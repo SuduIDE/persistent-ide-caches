@@ -20,7 +20,6 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     private final Env<ByteBuffer> env;
     private final TrigramCache cache;
-    private final Preparer preparer = new Preparer();
     private final Revisions revisions;
     private final TrigramFileCounterLmdb counter;
 
@@ -44,12 +43,12 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     @Override
     public void prepare(List<Change> changes) {
-        preparer.process(changes);
+        process(changes);
     }
 
     @Override
     public void processChanges(List<Change> changes) {
-        preparer.process(changes);
+        process(changes);
     }
 
     private void pushActions(TrigramFileCounter deltas, long timestamp) {
@@ -89,49 +88,46 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     }
 
 
-    private class Preparer {
+    public void process(List<Change> changes) {
+        var delta = new TrigramFileCounter();
+        changes.forEach(it -> countChange(it, delta));
+        var filteredDelta = new TrigramFileCounter(delta.getAsMap().entrySet().stream()
+                .filter(it -> it.getValue() > 0)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        counter.add(filteredDelta);
+        if (!changes.isEmpty()) pushActions(delta, changes.get(0).getTimestamp());
+    }
 
-        public void process(List<Change> changes) {
-            var delta = new TrigramFileCounter();
-            changes.forEach(it -> countChange(it, delta));
-            var filteredDelta = new TrigramFileCounter(delta.getAsMap().entrySet().stream()
-                    .filter(it -> it.getValue() > 0)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-            counter.add(filteredDelta);
-            if (!changes.isEmpty()) pushActions(delta, changes.get(0).getTimestamp());
-        }
+    private boolean validateFilename(String filename) {
+        return Stream.of(".java"/*, ".txt", ".kt", ".py"*/).anyMatch(filename::endsWith);
+    }
 
-        private boolean validateFilename(String filename) {
-            return Stream.of(".java"/*, ".txt", ".kt", ".py"*/).anyMatch(filename::endsWith);
-        }
+    private boolean validateChange(Change change) {
+        List<String> filenames = switch (change) {
+            case FileChange fileChange -> List.of(fileChange.getPlace().file().getName());
+            case FileHolderChange fileHolderChange -> List.of(fileHolderChange.getOldFileName().getName(),
+                    fileHolderChange.getNewFileName().getName());
+        };
+        return filenames.stream().anyMatch(this::validateFilename);
+    }
 
-        private boolean validateChange(Change change) {
-            List<String> filenames = switch (change) {
-                case FileChange fileChange -> List.of(fileChange.getPlace().file().getName());
-                case FileHolderChange fileHolderChange -> List.of(fileHolderChange.getOldFileName().getName(),
-                        fileHolderChange.getNewFileName().getName());
-            };
-            return filenames.stream().anyMatch(this::validateFilename);
-        }
-
-        private void countChange(Change change, TrigramFileCounter delta) {
+    private void countChange(Change change, TrigramFileCounter delta) {
 //            if (!validateChange(change)) return;
-            switch (change) {
-                case AddChange addChange ->
-                        delta.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));
-                case ModifyChange modifyChange -> {
-                    delta.decrease(modifyChange.getOldFileName(), getTrigramsCount(modifyChange.getOldFileContent()));
-                    delta.add(modifyChange.getNewFileName(), getTrigramsCount(modifyChange.getNewFileContent()));
-                }
-                case CopyChange copyChange ->
-                        delta.add(copyChange.getNewFileName(), getTrigramsCount(copyChange.getNewFileContent()));
-                case RenameChange renameChange -> {
-                    delta.decrease(renameChange.getOldFileName(), getTrigramsCount(renameChange.getOldFileContent()));
-                    delta.add(renameChange.getNewFileName(), getTrigramsCount(renameChange.getNewFileContent()));
-                }
-                case DeleteChange deleteChange ->
-                        delta.add(deleteChange.getPlace().file(), getTrigramsCount(deleteChange.getDeletedString()));
+        switch (change) {
+            case AddChange addChange ->
+                    delta.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));
+            case ModifyChange modifyChange -> {
+                delta.decrease(modifyChange.getOldFileName(), getTrigramsCount(modifyChange.getOldFileContent()));
+                delta.add(modifyChange.getNewFileName(), getTrigramsCount(modifyChange.getNewFileContent()));
             }
+            case CopyChange copyChange ->
+                    delta.add(copyChange.getNewFileName(), getTrigramsCount(copyChange.getNewFileContent()));
+            case RenameChange renameChange -> {
+                delta.decrease(renameChange.getOldFileName(), getTrigramsCount(renameChange.getOldFileContent()));
+                delta.add(renameChange.getNewFileName(), getTrigramsCount(renameChange.getNewFileContent()));
+            }
+            case DeleteChange deleteChange ->
+                    delta.add(deleteChange.getPlace().file(), getTrigramsCount(deleteChange.getDeletedString()));
         }
     }
 
