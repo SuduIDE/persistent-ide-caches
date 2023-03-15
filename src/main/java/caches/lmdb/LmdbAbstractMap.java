@@ -8,7 +8,7 @@ import org.lmdbjava.Txn;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 
-public abstract class LmdbAbstractMap implements Closeable {
+public abstract class LmdbAbstractMap implements Closeable, LmdbMap {
 
     protected final Env<ByteBuffer> env;
     protected final Dbi<ByteBuffer> db;

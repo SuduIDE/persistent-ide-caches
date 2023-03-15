@@ -2,7 +2,6 @@ package caches;
 
 
 import caches.records.Revision;
-
 import java.nio.file.Path;
 
 public class Main {
@@ -10,7 +9,7 @@ public class Main {
 
     // needs java options:
     /*
-     --add-opens java.base/java.nio=ALL-UNNAMED
+    --add-opens java.base/java.nio=ALL-UNNAMED
     --add-opens java.base/sun.nio.ch=ALL-UNNAMED
     */
     public static void main(String[] args) {
@@ -21,10 +20,10 @@ public class Main {
         try (IndexesManager manager = new IndexesManager()) {
             var trigramHistoryIndex = manager.addTrigramIndex();
             var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
-            final int LIMIT = 300;
+            final int LIMIT = 10;
             benchmark(() -> manager.parseGitRepository(Path.of(args[0]), LIMIT));
             System.out.println("Current revision: " + manager.getRevisions().getCurrentRevision());
-            trigramHistoryIndex.getCounter().forEach((tri, file, i) -> System.out.println(tri + " " + file + " " + i));
+//            trigramHistoryIndex.getCounter().forEach((tri, file, i) -> System.out.println(tri + " " + file + " " + i));
             benchmark(() -> System.out.println(trigramIndexUtils.filesForString("text")));
             benchmark(() -> System.out.println(trigramIndexUtils.filesForString("another text")));
 //        benchmarkCheckout(new Revision(0), trigramHistoryIndex);

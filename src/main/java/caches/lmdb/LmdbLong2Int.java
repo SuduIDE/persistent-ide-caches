@@ -14,7 +14,9 @@ public class LmdbLong2Int extends LmdbAbstractMap {
         putImpl(allocateLong(key),
                 allocateInt(value));
     }
-
+    /**
+     * @return value for key or -1
+     */
     public int get(long key) {
         ByteBuffer res = getImpl(allocateLong(key));
         return res == null ? -1 : res.getInt();

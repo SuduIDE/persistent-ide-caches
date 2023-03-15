@@ -8,9 +8,6 @@ import caches.records.Revision;
 import caches.trigram.TrigramCache;
 import caches.trigram.TrigramIndex;
 import caches.utils.EchoIndex;
-import org.eclipse.jgit.api.Git;
-import org.lmdbjava.Env;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.FileVisitResult;
@@ -20,8 +17,11 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import org.eclipse.jgit.api.Git;
+import org.lmdbjava.Env;
 
 public class IndexesManager implements AutoCloseable {
+
     private static final SimpleFileVisitor<Path> DELETE = new SimpleFileVisitor<>() {
         @Override
         public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
@@ -36,9 +36,9 @@ public class IndexesManager implements AutoCloseable {
         }
     };
 
-    private static final Path trigramPath = Path.of(TrigramCache.DIRECTORY);
-    private static final Path lmdbGlobalPath = Path.of(".lmdb");
-    private static final Path lmdbTrigramPath = Path.of(".lmdb.trigrams");
+    private final static Path trigramPath = Path.of(TrigramCache.DIRECTORY);
+    private final static Path lmdbGlobalPath = Path.of(".lmdb");
+    private final static Path lmdbTrigramPath = Path.of(".lmdb.trigrams");
     private final List<Index<?, ?>> indexes;
     private final Revisions revisions;
     private final FileCache fileCache;
@@ -55,6 +55,19 @@ public class IndexesManager implements AutoCloseable {
         variables = initVariables(globalEnv);
         revisions = initRevisions(globalEnv, variables);
         fileCache = initFileCache(globalEnv, variables);
+    }
+
+    public static void resetAllDataBases() {
+        try {
+            Files.walkFileTree(trigramPath, DELETE);
+            Files.walkFileTree(lmdbGlobalPath, DELETE);
+            Files.walkFileTree(lmdbTrigramPath, DELETE);
+            Files.createDirectories(trigramPath);
+            Files.createDirectories(lmdbGlobalPath);
+            Files.createDirectories(lmdbTrigramPath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private Env<ByteBuffer> initGlobalEnv() {
@@ -110,19 +123,6 @@ public class IndexesManager implements AutoCloseable {
             parser.parseAll();
         } catch (IOException ioException) {
             throw new RuntimeException(ioException);
-        }
-    }
-
-    public static void resetAllDataBases() {
-        try {
-            Files.walkFileTree(trigramPath, DELETE);
-            Files.walkFileTree(lmdbGlobalPath, DELETE);
-            Files.walkFileTree(lmdbTrigramPath, DELETE);
-            Files.createDirectories(trigramPath);
-            Files.createDirectories(lmdbGlobalPath);
-            Files.createDirectories(lmdbTrigramPath);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
         }
     }
 

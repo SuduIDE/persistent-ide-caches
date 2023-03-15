@@ -15,6 +15,10 @@ public class LmdbInt2Int extends LmdbAbstractMap {
                 allocateInt(value));
     }
 
+
+    /**
+     * @return value for key or -1
+     */
     public int get(int key) {
         ByteBuffer res = getImpl(allocateInt(key));
         return res == null ? -1 : res.getInt();

@@ -1,12 +1,12 @@
 package caches.lmdb;
 
-import org.lmdbjava.Env;
-
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
+import org.lmdbjava.Env;
 
-public class LmdbInt2File {
+public class LmdbInt2File implements LmdbMap {
+
     private final LmdbInt2String db;
 
     public LmdbInt2File(Env<ByteBuffer> env, String dbName) {
@@ -18,7 +18,8 @@ public class LmdbInt2File {
     }
 
     public File get(int key) {
-        return new File(db.get(key));
+        var value = db.get(key);
+        return value == null ? null : new File(db.get(key));
     }
 
     public void forEach(BiConsumer<Integer, File> consumer) {

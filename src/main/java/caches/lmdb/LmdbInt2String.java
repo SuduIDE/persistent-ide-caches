@@ -17,6 +17,9 @@ public class LmdbInt2String extends LmdbAbstractMap {
                 allocateString(value));
     }
 
+    /**
+     * @return value for key or null
+     */
     public String get(int key) {
         ByteBuffer res = getImpl(allocateInt(key));
         return res == null ? null : String.valueOf(StandardCharsets.UTF_8.decode(res));

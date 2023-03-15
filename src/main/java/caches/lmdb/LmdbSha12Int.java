@@ -22,6 +22,9 @@ public class LmdbSha12Int extends LmdbAbstractMap {
                 allocateInt(value));
     }
 
+    /**
+     * @return value for key or -1
+     */
     public int get(String hash) {
         byte[] bytes = HexFormat.of().parseHex(hash);
         ByteBuffer res = getImpl(allocateDirect(bytes.length).put(bytes).flip());
