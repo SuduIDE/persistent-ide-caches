@@ -6,8 +6,8 @@ import java.util.List;
 
 public interface ChangeProcessor {
 
-    void prepare(List<Change> changes);
+    void prepare(List<? extends Change> changes);
 
 
-    void processChanges(List<Change> changes);
+    void processChanges(List<? extends Change> changes);
 }

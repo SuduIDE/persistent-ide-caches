@@ -1,13 +1,29 @@
 package caches;
 
-import caches.changes.*;
+import caches.changes.AddChange;
+import caches.changes.Change;
+import caches.changes.CopyChange;
+import caches.changes.DeleteChange;
+import caches.changes.FileChange;
+import caches.changes.FileHolderChange;
+import caches.changes.ModifyChange;
+import caches.changes.RenameChange;
 import caches.lmdb.LmdbSha12Int;
 import caches.records.FilePointer;
 import caches.records.Revision;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.AbbreviatedObjectId;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
@@ -20,36 +36,23 @@ import org.eclipse.jgit.treewalk.filter.PathSuffixFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 
 public class GitParser {
 
+    public static final boolean PARSE_ONLY_TREE = false;
     private static final Logger LOG = LoggerFactory.getLogger(GitParser.class);
     private final Repository repository;
-    private final List<Index<?, ?>> indexes;
+    private final IndexesManager indexesManager;
     private final int commitsLimit;
-    public static final boolean PARSE_ONLY_TREE = false;
     private final LmdbSha12Int gitCommits2Revisions;
-    private final FileCache fileCache;
-    private final Revisions revisions;
 
-    public GitParser(Git git, List<Index<?, ?>> indices, LmdbSha12Int gitCommits2Revisions, Revisions revisions, FileCache fileCache) {
-        this(git, indices, gitCommits2Revisions, revisions, fileCache, Integer.MAX_VALUE);
+    public GitParser(Git git, IndexesManager indexesManager, LmdbSha12Int gitCommits2Revisions) {
+        this(git, indexesManager, gitCommits2Revisions, Integer.MAX_VALUE);
     }
 
-    public GitParser(Git git, List<Index<?, ?>> indices, LmdbSha12Int gitCommits2Revisions, Revisions revisions, FileCache fileCache, int commitsLimit) {
+    public GitParser(Git git, IndexesManager indexesManager, LmdbSha12Int gitCommits2Revisions, int commitsLimit) {
         repository = git.getRepository();
-        this.indexes = indices;
-        this.revisions = revisions;
-        this.fileCache = fileCache;
+        this.indexesManager = indexesManager;
         this.commitsLimit = commitsLimit;
         this.gitCommits2Revisions = gitCommits2Revisions;
     }
@@ -65,7 +68,11 @@ public class GitParser {
         }
     }
 
-    public void parseOne(ObjectId head) {
+    public void parseHead() throws IOException {
+        parseOne(repository.resolve(Constants.HEAD));
+    }
+
+    private void parseOne(ObjectId head) {
         LOG.info("Parsing ref: " + head.getName());
         try (RevWalk walk = new RevWalk(repository)) {
             Deque<RevCommit> commits = new ArrayDeque<>();
@@ -86,14 +93,14 @@ public class GitParser {
             LOG.info(String.format("%d commits found to process", commits.size()));
 
             if (firstCommit == null) {
-                revisions.setCurrentRevision(Revision.NULL);
-                indexes.forEach(i -> i.checkout(Revision.NULL));
+                indexesManager.getRevisions().setCurrentRevision(Revision.NULL);
+                indexesManager.checkout(Revision.NULL);
                 firstCommit = commits.removeLast();
                 parseFirstCommit(firstCommit);
             } else {
                 var rev = new Revision(gitCommits2Revisions.get(firstCommit.getName()));
-                revisions.setCurrentRevision(rev);
-                indexes.forEach(i -> i.checkout(rev));
+                indexesManager.getRevisions().setCurrentRevision(rev);
+                indexesManager.checkout(rev);
             }
             var prevCommit = firstCommit;
 
@@ -118,21 +125,23 @@ public class GitParser {
     void sendChanges(List<Change> changes, RevCommit commit) {
         changes.forEach(it -> {
             switch (it) {
-                case FileChange fileChange -> fileCache.tryRegisterNewFile(fileChange.getPlace().file());
+                case FileChange fileChange -> indexesManager.getFileCache().tryRegisterNewFile(fileChange.getPlace().file());
                 case FileHolderChange fileHolderChange -> {
-                    fileCache.tryRegisterNewFile(fileHolderChange.getOldFileName());
-                    fileCache.tryRegisterNewFile(fileHolderChange.getNewFileName());
+                    indexesManager.getFileCache().tryRegisterNewFile(fileHolderChange.getOldFileName());
+                    indexesManager.getFileCache().tryRegisterNewFile(fileHolderChange.getNewFileName());
                 }
             }
         });
         int rev = gitCommits2Revisions.get(commit.getName());
         if (rev == -1) {
-            revisions.setCurrentRevision(revisions.addRevision(revisions.getCurrentRevision()));
-            gitCommits2Revisions.put(commit.getName(), revisions.getCurrentRevision().revision());
+            indexesManager.getRevisions().setCurrentRevision(
+                    indexesManager.getRevisions().addRevision(
+                            indexesManager.getRevisions().getCurrentRevision()));
+            gitCommits2Revisions.put(commit.getName(), indexesManager.getRevisions().getCurrentRevision().revision());
         } else {
-            revisions.setCurrentRevision(new Revision(rev));
+            indexesManager.getRevisions().setCurrentRevision(new Revision(rev));
         }
-        indexes.forEach(it -> it.prepare(changes));
+        indexesManager.applyChanges(changes);
     }
 
     private void parseCommit(RevCommit commit, RevCommit prevCommit) throws IOException, GitAPIException {
@@ -204,7 +213,7 @@ public class GitParser {
     private void parseFirstCommit(RevCommit first) {
         int rev = gitCommits2Revisions.get(first.getName());
         if (rev != -1) {
-            revisions.setCurrentRevision(new Revision(rev));
+            indexesManager.getRevisions().setCurrentRevision(new Revision(rev));
             return;
         }
         List<Change> changes = new ArrayList<>();

@@ -59,11 +59,11 @@
             <version>${junit.platform.version}</version>
             <scope>test</scope>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/org.mockito/mockito-all -->
+        <!-- https://mvnrepository.com/artifact/org.mockito/mockito-core -->
         <dependency>
             <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-            <version>1.10.19</version>
+            <artifactId>mockito-core</artifactId>
+            <version>5.2.0</version>
             <scope>test</scope>
         </dependency>
         <!-- https://mvnrepository.com/artifact/org.lmdbjava/lmdbjava -->

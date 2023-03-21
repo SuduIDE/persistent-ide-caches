@@ -16,8 +16,7 @@ public class Main {
         if (args.length < 1) {
             throw new RuntimeException("Needs path to repository as first arg");
         }
-        IndexesManager.resetAllDataBases();
-        try (IndexesManager manager = new IndexesManager()) {
+        try (IndexesManager manager = new IndexesManager(true)) {
             var trigramHistoryIndex = manager.addTrigramIndex();
             var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
             final int LIMIT = 10;

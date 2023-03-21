@@ -11,14 +11,14 @@ public class EchoIndex implements Index<String, String> {
     public static final String SEP = "-------------------";
 
     @Override
-    public void prepare(List<Change> changes) {
+    public void prepare(List<? extends Change> changes) {
         System.out.println("Echo: prepare");
         changes.forEach(System.out::println);
         System.out.println(SEP);
     }
 
     @Override
-    public void processChanges(List<Change> changes) {
+    public void processChanges(List<? extends Change> changes) {
         System.out.println("Echo: process");
         changes.forEach(System.out::println);
         System.out.println(SEP);

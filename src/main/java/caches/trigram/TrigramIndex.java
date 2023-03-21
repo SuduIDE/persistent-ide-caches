@@ -8,6 +8,7 @@ import caches.lmdb.LmdbInt2Long;
 import caches.records.Revision;
 import caches.records.Trigram;
 import caches.records.TrigramFile;
+import java.nio.file.Path;
 import org.lmdbjava.Env;
 
 import java.nio.ByteBuffer;
@@ -24,9 +25,9 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     private final TrigramFileCounterLmdb counter;
     private final TrigramIndexUtils trigramIndexUtils;
 
-    public TrigramIndex(Env<ByteBuffer> env, FileCache fileCache, Revisions revisions) {
+    public TrigramIndex(Env<ByteBuffer> env, FileCache fileCache, Revisions revisions, Path dataDirectory) {
         this.env = env;
-        cache = new TrigramCache(revisions, new LmdbInt2Long(env, "trigram_pointers"), fileCache);
+        cache = new TrigramCache(revisions, new LmdbInt2Long(env, "trigram_pointers"), fileCache, dataDirectory);
         this.revisions = revisions;
         counter = new TrigramFileCounterLmdb(this.env, fileCache);
         trigramIndexUtils = new TrigramIndexUtils(this);
@@ -47,12 +48,12 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     }
 
     @Override
-    public void prepare(List<Change> changes) {
+    public void prepare(List<? extends Change> changes) {
         process(changes);
     }
 
     @Override
-    public void processChanges(List<Change> changes) {
+    public void processChanges(List<? extends Change> changes) {
         process(changes);
     }
 
@@ -93,7 +94,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     }
 
 
-    public void process(List<Change> changes) {
+    public void process(List<? extends Change> changes) {
         var delta = new TrigramFileCounter();
         changes.forEach(it -> countChange(it, delta));
         var filteredDelta = new TrigramFileCounter(delta.getAsMap().entrySet().stream()
