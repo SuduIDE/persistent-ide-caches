@@ -108,14 +108,14 @@ public class GitParser {
             int totalCommits = Math.min(commitsLimit, commits.size());
             while (commitsParsed < totalCommits) {
                 if (commitsParsed % 100 == 0) {
-                    System.out.printf("Processed %d commits out of %d %n", commitsParsed, totalCommits);
+                    System.err.printf("Processed %d commits out of %d %n", commitsParsed, totalCommits);
                 }
                 var commit = commits.removeLast();
                 parseCommit(commit, prevCommit);
                 prevCommit = commit;
                 commitsParsed++;
             }
-            System.out.println("Processed " + totalCommits + " commits");
+            System.err.println("Processed " + totalCommits + " commits");
         } catch (GitAPIException | IOException e) {
             throw new RuntimeException(e);
         }
