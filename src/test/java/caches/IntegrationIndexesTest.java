@@ -39,17 +39,17 @@ public class IntegrationIndexesTest {
         var addChanges = FILES.stream().map(it -> createAddChange(it, it.toString())).toList();
         trigramIndex.processChanges(addChanges);
         FILES.forEach(file ->
-                Assertions.assertEquals(List.of(file.toFile()),
+                Assertions.assertEquals(List.of(file),
                         trigramIndex.getTrigramIndexUtils().filesForString(file.toString()))
         );
     }
 
     private void addFiles(List<Path> paths) {
-        paths.forEach(it -> indexesManager.getFileCache().tryRegisterNewFile(it.toFile()));
+        paths.forEach(it -> indexesManager.getFileCache().tryRegisterNewFile(it));
     }
 
     private AddChange createAddChange(Path path, String text) {
-        return new AddChange(System.currentTimeMillis(), new FilePointer(path.toFile(), 0), text);
+        return new AddChange(System.currentTimeMillis(), new FilePointer(path, 0), text);
     }
 
 

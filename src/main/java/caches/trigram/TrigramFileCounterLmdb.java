@@ -5,13 +5,12 @@ import caches.lmdb.LmdbLong2IntCounter;
 import caches.records.LongInt;
 import caches.records.Trigram;
 import caches.utils.TriConsumer;
-import org.lmdbjava.Env;
-import org.lmdbjava.Txn;
-
-import java.io.File;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import org.lmdbjava.Env;
+import org.lmdbjava.Txn;
 
 public class TrigramFileCounterLmdb {
     private final FileCache fileCache;
@@ -22,11 +21,11 @@ public class TrigramFileCounterLmdb {
         this.fileCache = fileCache;
     }
 
-    public int get(Trigram trigram, File file) {
+    public int get(Trigram trigram, Path file) {
         return db.get(getKey(trigram, file));
     }
 
-    private long getKey(Trigram trigram, File file) {
+    private long getKey(Trigram trigram, Path file) {
         return getKey(trigram.trigram(), fileCache.getNumber(file));
     }
 
@@ -57,8 +56,8 @@ public class TrigramFileCounterLmdb {
         db.decrease(txn, getKey(bytes, file), delta);
     }
 
-    public List<File> getFilesForTrigram(Trigram trigram) {
-        List<File> list = new ArrayList<>();
+    public List<Path> getFilesForTrigram(Trigram trigram) {
+        List<Path> list = new ArrayList<>();
         db.forEachFromTo((trigramFileLong, val) -> {
                     if (val > 0)
                         list.add(fileCache.getFile(trigramFileLong.intValue()));
@@ -68,7 +67,7 @@ public class TrigramFileCounterLmdb {
         return list;
     }
 
-    public void forEach(TriConsumer<Trigram, File, Integer> consumer) {
+    public void forEach(TriConsumer<Trigram, Path, Integer> consumer) {
         db.forEach((l, i) ->
                 consumer.accept(new Trigram(l >> Integer.SIZE),
                         fileCache.getFile(l.intValue()),

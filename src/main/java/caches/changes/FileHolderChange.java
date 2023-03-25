@@ -1,17 +1,17 @@
 package caches.changes;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 public abstract sealed class FileHolderChange extends Change permits ModifyChange, RenameChange, CopyChange {
 
     private final Supplier<String> oldFileGetter;
     private final Supplier<String> newFileGetter;
-    private final File oldFileName;
-    private final File newFileName;
+    private final Path oldFileName;
+    private final Path newFileName;
 
 
-    public FileHolderChange(long timestamp, Supplier<String> oldFileGetter, Supplier<String> newFileGetter, File oldFileName, File newFileName) {
+    public FileHolderChange(long timestamp, Supplier<String> oldFileGetter, Supplier<String> newFileGetter, Path oldFileName, Path newFileName) {
         super(timestamp);
         this.oldFileGetter = oldFileGetter;
         this.newFileGetter = newFileGetter;
@@ -27,11 +27,11 @@ public abstract sealed class FileHolderChange extends Change permits ModifyChang
         return newFileGetter;
     }
 
-    public File getOldFileName() {
+    public Path getOldFileName() {
         return oldFileName;
     }
 
-    public File getNewFileName() {
+    public Path getNewFileName() {
         return newFileName;
     }
 

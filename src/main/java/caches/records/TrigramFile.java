@@ -1,6 +1,6 @@
 package caches.records;
 
-import java.io.File;
+import java.nio.file.Path;
 
-public record TrigramFile(Trigram trigram, File file) {
+public record TrigramFile(Trigram trigram, Path file) {
 }

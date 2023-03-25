@@ -1,17 +1,16 @@
 package caches.trigram;
 
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import caches.records.Trigram;
 import caches.records.TrigramFile;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class TrigramFileCounterTest {
 
@@ -24,12 +23,12 @@ public class TrigramFileCounterTest {
             new Trigram(new byte[]{4, 5, 1})
     );
 
-    private static final List<File> files = List.of(
-            new File("1"),
-            new File("2"),
-            new File("3"),
-            new File("4"),
-            new File("5")
+    private static final List<Path> files = List.of(
+            Path.of("1"),
+            Path.of("2"),
+            Path.of("3"),
+            Path.of("4"),
+            Path.of("5")
     );
 
     @BeforeEach

@@ -1,36 +1,36 @@
 package caches;
 
-import caches.lmdb.LmdbInt2File;
+import caches.lmdb.LmdbInt2Path;
 import caches.lmdb.LmdbString2Int;
-
-import java.io.File;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
 
 public class FileCache {
     private final String FILES = "files";
-    private final LmdbInt2File filesInProject;
-    private final Map<File, Integer> reverseFilesInProject = new HashMap<>();
+    private final LmdbInt2Path filesInProject;
+    private final Map<Path, Integer> reverseFilesInProject = new HashMap<>();
     private final LmdbString2Int variables;
 
-    public FileCache(LmdbInt2File filesInProject, LmdbString2Int variables) {
+    public FileCache(LmdbInt2Path filesInProject, LmdbString2Int variables) {
         this.filesInProject = filesInProject;
         this.variables = variables;
     }
 
-    public int getNumber(File  file) {
-        return reverseFilesInProject.get(file);
+    public int getNumber(Path path) {
+        return reverseFilesInProject.get(path);
     }
 
-    public File getFile(int fileNum) {
+    public Path getFile(int fileNum) {
         return filesInProject.get(fileNum);
     }
 
-    public void tryRegisterNewFile(File file) {
-        if (reverseFilesInProject.get(file) == null) {
+    public void tryRegisterNewFile(Path path) {
+        if (reverseFilesInProject.get(path) == null) {
             var fileNum = variables.get(FILES);
-            filesInProject.put(fileNum, file);
-            reverseFilesInProject.put(file, fileNum);
+            filesInProject.put(fileNum, path);
+            reverseFilesInProject.put(path, fileNum);
             variables.put(FILES, fileNum + 1);
         }
     }
@@ -43,5 +43,9 @@ public class FileCache {
         if (variables.get(FILES) == -1) {
             variables.put(FILES, 0);
         }
+    }
+
+    public void forEach(BiConsumer<Path, Number> consumer) {
+        reverseFilesInProject.forEach(consumer);
     }
 }

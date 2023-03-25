@@ -68,7 +68,7 @@ public class LmdbMapsTest {
 
     @Test
     void testInt2File() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        var map = new LmdbInt2File(env, "a");
+        var map = new LmdbInt2Path(env, "a");
         var list = List.of(
                 Pair.of(1, Path.of("1").toFile()),
                 Pair.of(3, Path.of("3").toFile()),

@@ -11,8 +11,8 @@ import caches.changes.RenameChange;
 import caches.lmdb.LmdbSha12Int;
 import caches.records.FilePointer;
 import caches.records.Revision;
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -180,32 +180,32 @@ public class GitParser {
     List<Change> processDiff(DiffEntry diffEntry) throws IOException {
         return switch (diffEntry.getChangeType()) {
             case ADD -> List.of(new AddChange(System.currentTimeMillis(),
-                    new FilePointer(new File(diffEntry.getNewPath()), 0),
+                    new FilePointer(Path.of(diffEntry.getNewPath()), 0),
                     new String(repository.open(diffEntry.getNewId().toObjectId()).getBytes()))
             );
             case MODIFY -> List.of(
                     new ModifyChange(System.currentTimeMillis(),
                             fileGetter(diffEntry.getOldId()),
                             fileGetter(diffEntry.getNewId()),
-                            new File(diffEntry.getOldPath()),
-                            new File(diffEntry.getNewPath())
+                            Path.of(diffEntry.getOldPath()),
+                            Path.of(diffEntry.getNewPath())
                     ));
             case DELETE -> List.of(
-                    new DeleteChange(System.currentTimeMillis(), new FilePointer(new File(diffEntry.getOldPath()), 0),
+                    new DeleteChange(System.currentTimeMillis(), new FilePointer(Path.of(diffEntry.getOldPath()), 0),
                             new String(repository.open(diffEntry.getOldId().toObjectId()).getBytes())));
             case RENAME -> List.of(
                     new RenameChange(System.currentTimeMillis(),
                             fileGetter(diffEntry.getOldId()),
                             fileGetter(diffEntry.getNewId()),
-                            new File(diffEntry.getOldPath()),
-                            new File(diffEntry.getNewPath())
+                            Path.of(diffEntry.getOldPath()),
+                            Path.of(diffEntry.getNewPath())
                     ));
             case COPY -> List.of(
                     new CopyChange(System.currentTimeMillis(),
                             fileGetter(diffEntry.getOldId()),
                             fileGetter(diffEntry.getNewId()),
-                            new File(diffEntry.getOldPath()),
-                            new File(diffEntry.getNewPath())
+                            Path.of(diffEntry.getOldPath()),
+                            Path.of(diffEntry.getNewPath())
                     ));
         };
     }
@@ -222,7 +222,7 @@ public class GitParser {
             treeWalk.setRecursive(true);
             while (treeWalk.next()) {
                 changes.add(new AddChange(System.currentTimeMillis(),
-                        new FilePointer(new File(treeWalk.getPathString()), 0),
+                        new FilePointer(Path.of(treeWalk.getPathString()), 0),
                         new String(repository.open(treeWalk.getObjectId(0)).getBytes()))
                 );
             }

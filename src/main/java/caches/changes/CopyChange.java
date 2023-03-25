@@ -1,10 +1,10 @@
 package caches.changes;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 public final class CopyChange extends FileHolderChange {
-    public CopyChange(long timestamp, Supplier<String> oldFileGetter, Supplier<String> newFileGetter, File oldFile, File newFile) {
+    public CopyChange(long timestamp, Supplier<String> oldFileGetter, Supplier<String> newFileGetter, Path oldFile, Path newFile) {
         super(timestamp, oldFileGetter, newFileGetter, oldFile, newFile);
     }
 

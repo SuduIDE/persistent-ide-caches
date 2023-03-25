@@ -1,8 +1,8 @@
 package caches;
 
 import caches.changes.Change;
-import caches.lmdb.LmdbInt2File;
 import caches.lmdb.LmdbInt2Int;
+import caches.lmdb.LmdbInt2Path;
 import caches.lmdb.LmdbSha12Int;
 import caches.lmdb.LmdbString2Int;
 import caches.records.Revision;
@@ -62,6 +62,15 @@ public class IndexesManager implements AutoCloseable {
         trigramPath = dataPath.resolve(".trigrams");
         lmdbGlobalPath = dataPath.resolve(".lmdb");
         lmdbTrigramPath = dataPath.resolve(".lmdb.trigrams");
+        if (resetDBs) {
+            try {
+                Files.walkFileTree(trigramPath, DELETE);
+                Files.walkFileTree(lmdbGlobalPath, DELETE);
+                Files.walkFileTree(lmdbTrigramPath, DELETE);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
         FileUtils.createParentDirectories(trigramPath, lmdbTrigramPath, lmdbGlobalPath);
 
         globalEnv = initGlobalEnv();
@@ -69,22 +78,6 @@ public class IndexesManager implements AutoCloseable {
         revisions = initRevisions(globalEnv, variables);
         fileCache = initFileCache(globalEnv, variables);
 
-    }
-
-
-
-    private
-    void resetAllDataBases() {
-        try {
-            Files.walkFileTree(trigramPath, DELETE);
-            Files.walkFileTree(lmdbGlobalPath, DELETE);
-            Files.walkFileTree(lmdbTrigramPath, DELETE);
-            Files.createDirectories(trigramPath);
-            Files.createDirectories(lmdbGlobalPath);
-            Files.createDirectories(lmdbTrigramPath);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private Env<ByteBuffer> initGlobalEnv() {
@@ -104,7 +97,7 @@ public class IndexesManager implements AutoCloseable {
     }
 
     private FileCache initFileCache(Env<ByteBuffer> globalEnv, LmdbString2Int variables) {
-        FileCache fileCache = new FileCache(new LmdbInt2File(globalEnv, "files"), variables);
+        FileCache fileCache = new FileCache(new LmdbInt2Path(globalEnv, "files"), variables);
         fileCache.initFiles();
         fileCache.restoreFilesFromDB();
         return fileCache;
@@ -166,5 +159,14 @@ public class IndexesManager implements AutoCloseable {
         return variables;
     }
 
-    public void applyChanges(List<Change> changes) { indexes.forEach(it -> it.processChanges(changes));}
+    public void applyChanges(List<Change> changes) {
+        indexes.forEach(it -> it.processChanges(changes));
+    }
+
+    public void nextRevision() {
+        revisions.setCurrentRevision(
+                revisions.addRevision(
+                        revisions.getCurrentRevision()
+                ));
+    }
 }

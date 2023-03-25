@@ -4,11 +4,11 @@ import caches.FileCache;
 import caches.records.Trigram;
 import caches.utils.ReadUtils;
 import caches.utils.TriConsumer;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,7 +34,7 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
 
     byte[] toBytes() {
         int size = HEADER_BYTE_SIZE;
-        Map<File, List<TrigramInteger>> groupedDelta = new HashMap<>();
+        Map<Path, List<TrigramInteger>> groupedDelta = new HashMap<>();
         deltas.forEach(((trigram, file, integer) -> groupedDelta.computeIfAbsent(file, (ignore) -> new ArrayList<>())));
         deltas.forEach(((trigram, file, integer) -> groupedDelta.get(file).add(new TrigramInteger(trigram, integer))));
         for (var it : groupedDelta.entrySet()) {

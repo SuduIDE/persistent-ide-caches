@@ -1,6 +1,6 @@
 package caches.records;
 
-import java.io.File;
+import java.nio.file.Path;
 
-public record FilePointer(File file, int offset) {
+public record FilePointer(Path file, int offset) {
 }

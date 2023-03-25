@@ -3,19 +3,23 @@ package caches.trigram;
 import caches.FileCache;
 import caches.Index;
 import caches.Revisions;
-import caches.changes.*;
+import caches.changes.AddChange;
+import caches.changes.Change;
+import caches.changes.CopyChange;
+import caches.changes.DeleteChange;
+import caches.changes.ModifyChange;
+import caches.changes.RenameChange;
 import caches.lmdb.LmdbInt2Long;
 import caches.records.Revision;
 import caches.records.Trigram;
 import caches.records.TrigramFile;
-import java.nio.file.Path;
-import org.lmdbjava.Env;
-
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.lmdbjava.Env;
 
 public class TrigramIndex implements Index<TrigramFile, Integer> {
 
@@ -108,17 +112,7 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
         return Stream.of(".java"/*, ".txt", ".kt", ".py"*/).anyMatch(filename::endsWith);
     }
 
-    private boolean validateChange(Change change) {
-        List<String> filenames = switch (change) {
-            case FileChange fileChange -> List.of(fileChange.getPlace().file().getName());
-            case FileHolderChange fileHolderChange -> List.of(fileHolderChange.getOldFileName().getName(),
-                    fileHolderChange.getNewFileName().getName());
-        };
-        return filenames.stream().anyMatch(this::validateFilename);
-    }
-
     private void countChange(Change change, TrigramFileCounter delta) {
-//            if (!validateChange(change)) return;
         switch (change) {
             case AddChange addChange ->
                     delta.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));
