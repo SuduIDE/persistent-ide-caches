@@ -2,26 +2,25 @@ package caches.trigram;
 
 import caches.records.Trigram;
 import caches.records.TrigramFile;
+import caches.utils.Counter;
 import caches.utils.TriConsumer;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-public class TrigramFileCounter {
+public class TrigramFileCounter extends Counter<TrigramFile> {
     public static final TrigramFileCounter EMPTY_COUNTER = new TrigramFileCounter();
-    private final Map<TrigramFile, Integer> map;
 
     public TrigramFileCounter() {
-        map = new HashMap<>();
     }
 
-    public TrigramFileCounter(Map<TrigramFile, Integer> map) {
-        this.map = map;
+    public TrigramFileCounter(final Map<TrigramFile, Integer> counter) {
+        super(counter);
     }
 
     public void add(Trigram trigram, File file, int delta) {
-        map.compute(new TrigramFile(trigram, file), (ignore, val) -> val == null ? delta : val + delta);
+        add(new TrigramFile(trigram, file), delta);
     }
 
     public void decrease(Trigram trigram, File file, int delta) {
@@ -37,15 +36,10 @@ public class TrigramFileCounter {
     }
 
     public void forEach(TriConsumer<Trigram, File, Integer> consumer) {
-        map.forEach(((trigramFile, integer) -> consumer.accept(trigramFile.trigram(), trigramFile.file(), integer)));
+        forEach(((trigramFile, integer) -> consumer.accept(trigramFile.trigram(), trigramFile.file(), integer)));
     }
 
     public int get(Trigram trigram, File file) {
-        Integer result = map.get(new TrigramFile(trigram, file));
-        return result == null ? 0 : result;
-    }
-
-    public Map<TrigramFile, Integer> getAsMap() {
-        return map;
+        return get(new TrigramFile(trigram, file));
     }
 }

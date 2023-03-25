@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 public class Counter<Key> {
-    private final Map<Key, Integer> counter;
+    protected final Map<Key, Integer> counter;
 
     // LIMIT=300
     // fast-util.Avl 210 64 1 9 9 64
