@@ -1,7 +1,6 @@
 public class SegTreeExample {
     int[] tree;
     int pw;
-
     SegTreeExample(int[] a) {
         int n = a.length;
         pw = 1;
