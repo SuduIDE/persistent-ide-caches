@@ -4,6 +4,8 @@
 
 *The first concept. The previous file of the concept is [TrigramStructure.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/TrigramStructure.md).*
 
+*The description of the actual concept is in [TrigramRevisionTree.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/TrigramRevisionTree.md).*
+
 *This concept doesn't work because of impossibility of checkouting and branching of particular commit in independent trigram trees. It can't be found in which vertex the actual position is.*
 
 The data structure for each trigram stores files in which it is used. It processes following type of operations: add file with trigram, remove file with trigram, checkout to the previous version and find all files with particular trigram.

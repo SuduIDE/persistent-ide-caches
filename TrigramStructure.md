@@ -2,6 +2,8 @@
 
 *The first concept. The next file of the concept is [TrigramFilesStorage.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/TrigramFilesStorage.md).*
 
+*The description of the actual concept is in [TrigramRevisionTree.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/TrigramRevisionTree.md).*
+
 *This concept doesn't work because of impossibility of checkouting and branching of particular commit in independent trigram trees. It can't be found in which vertex the actual position is.*
 
 The data structure with linear memory that implements the interaction with trigrams such as adding, removing, swithcing version and search sufficiently fast.
