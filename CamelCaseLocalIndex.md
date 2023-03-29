@@ -1,5 +1,7 @@
 # Global index + local index
 
+*Third file about CamelCaseSearch. The previous file is [CamelCasePriorities.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/CamelCasePriorities.md).*
+
 In the previous files ([CamelCaseSearch.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/CamelCaseSearch.md), [CamelCasePriorities.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/CamelCasePriorities.md)) the general approach for trigram search was discussed. However, it gives all words, that fulfills the pattern. But we want to constract the local index, which describes how good the word maps to the pattern.
 
 ## Beginning word symbol

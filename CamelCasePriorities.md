@@ -1,5 +1,7 @@
 # CamelCase search optimization and priorities
 
+*Second file about CamelCaseSearch. The previous file is [CamelCaseSearch.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/CamelCaseSearch.md). The next file is [CamelCaseLocalIndex.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/CamelCaseLocalIndex.md).*
+
 The first most naive approach of CamelCase search was described in [CamelCaseSearch.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/CamelCaseSearch.md). Also the patterns and the corresponding words were described.
 
 This file describes the optimized algorithm and the priorities of the trigrams.

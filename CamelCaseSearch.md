@@ -1,5 +1,7 @@
 # CamelCase search
 
+*First file about CamelCaseSearch. The next file is [CamelCasePriorities.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/CamelCasePriorities.md).*
+
 This document describes the algorithm of CamelCase search using trigram index. 
 
 It allows a fast search algoithm with linear memory, while the priority of the results is discussive.
