@@ -1,5 +1,7 @@
 # Trigram revision tree with computable trigram index
 
+*The actual concept. The exproations about path compression are in [tree-analysis.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/tree-analysis.md). Th algorithm for checkouts and path compression are in [PathCompression.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/PathCompression.md).*
+
 This document describes the basic idea of a trigram index data structure. The data structure consists of a single revision tree, in nodes of which the differences between the two versions are stored.
 
 Such approach leads to an efficient time and memory complexity, and also makes it possible to introduce multiple optimizations to the solution.

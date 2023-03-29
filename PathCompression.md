@@ -1,5 +1,7 @@
 # Path compression
 
+*The algorithm of path compression. The description of the concept is in [TrigramRevisionTree.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/TrigramRevisionTree.md).*
+
 This document describes the idea of optimizing the algorithm for performing checkout queries by compressing tree paths.
 
 This leads to decrease in time complexity of checkout query, with a cost of increase in extra memory used for storing the compressed paths.

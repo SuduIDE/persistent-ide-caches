@@ -1,5 +1,7 @@
 # Analysis of GitHub repository tree structure
 
+*The analysis of tree structure on real repositories. The description of the concept is in [TrigramRevisionTree.md](https://github.com/SuduIDE/persistent-ide-caches/blob/main/TrigramRevisionTree.md).*
+
 In order to determine how the future algorithm will perform, it was decided to perform an analysis of some open-source repositories. Those included [xodus](https://github.com/JetBrains/xodus/), [commons-lang](https://github.com/apache/commons-lang), [soot](https://github.com/soot-oss/soot), [intellij-community](https://github.com/JetBrains/intellij-community).
 
 ## Analysis of tree structure
