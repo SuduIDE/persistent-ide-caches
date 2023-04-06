@@ -9,12 +9,11 @@ import com.github.SuduIDE.persistentidecaches.changes.CopyChange;
 import com.github.SuduIDE.persistentidecaches.changes.DeleteChange;
 import com.github.SuduIDE.persistentidecaches.changes.ModifyChange;
 import com.github.SuduIDE.persistentidecaches.changes.RenameChange;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbInt2Long;
+import com.github.SuduIDE.persistentidecaches.lmdb.LmdbInt2Bytes;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import com.github.SuduIDE.persistentidecaches.records.TrigramFile;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,19 +28,19 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     private final TrigramFileCounterLmdb counter;
     private final TrigramIndexUtils trigramIndexUtils;
 
-    public TrigramIndex(Env<ByteBuffer> env, FileCache fileCache, Revisions revisions, Path dataDirectory) {
+    public TrigramIndex(final Env<ByteBuffer> env, final FileCache fileCache, final Revisions revisions) {
         this.env = env;
-        cache = new TrigramCache(revisions, new LmdbInt2Long(env, "trigram_pointers"), fileCache, dataDirectory);
+        cache = new TrigramCache(revisions, new LmdbInt2Bytes(env, "trigram_deltas"), fileCache);
         this.revisions = revisions;
         counter = new TrigramFileCounterLmdb(this.env, fileCache);
         trigramIndexUtils = new TrigramIndexUtils(this);
     }
 
-    private static TrigramCounter getTrigramsCount(String str) {
-        byte[] bytes = str.getBytes();
-        TrigramCounter result = new TrigramCounter();
+    private static TrigramCounter getTrigramsCount(final String str) {
+        final byte[] bytes = str.getBytes();
+        final TrigramCounter result = new TrigramCounter();
         for (int i = 2; i < bytes.length; i++) {
-            Trigram trigram = new Trigram(new byte[]{bytes[i - 2], bytes[i - 1], bytes[i]});
+            final Trigram trigram = new Trigram(new byte[]{bytes[i - 2], bytes[i - 1], bytes[i]});
             result.add(trigram);
         }
         return result;
@@ -52,27 +51,27 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     }
 
     @Override
-    public void prepare(List<? extends Change> changes) {
+    public void prepare(final List<? extends Change> changes) {
         process(changes);
     }
 
     @Override
-    public void processChanges(List<? extends Change> changes) {
+    public void processChanges(final List<? extends Change> changes) {
         process(changes);
     }
 
-    private void pushActions(TrigramFileCounter deltas, long timestamp) {
+    private void pushActions(final TrigramFileCounter deltas, final long timestamp) {
         cache.pushCluster(timestamp, deltas);
     }
 
     @Override
-    public Integer getValue(TrigramFile trigramFile, Revision revision) {
-        var currentRevision = revisions.getCurrentRevision();
+    public Integer getValue(final TrigramFile trigramFile, final Revision revision) {
+        final var currentRevision = revisions.getCurrentRevision();
         if (revision.equals(currentRevision)) {
             return counter.get(trigramFile.trigram(), trigramFile.file());
         } else {
             checkout(revision);
-            var ans = counter.get(trigramFile.trigram(), trigramFile.file());
+            final var ans = counter.get(trigramFile.trigram(), trigramFile.file());
             checkout(currentRevision);
             return ans;
         }
@@ -80,8 +79,9 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     @Override
     public void checkout(Revision targetRevision) {
-        try (var txn = env.txnWrite()) {
-            var currentRevision = revisions.getCurrentRevision();
+        var currentRevision = revisions.getCurrentRevision();
+        try (final var txn = env.txnWrite()) {
+//            final var deltasList = new ArrayList<ByteArrIntInt>();
             while (!currentRevision.equals(targetRevision)) {
                 if (currentRevision.revision() > targetRevision.revision()) {
                     cache.processDataCluster(currentRevision,
@@ -92,27 +92,32 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
                             (bytes, file, d) -> counter.addIt(txn, bytes, file, d));
                     targetRevision = revisions.getParent(targetRevision);
                 }
+//                counter.add(txn, deltasList);
+//                deltasList.clear();
             }
             txn.commit();
         }
+
     }
 
 
-    public void process(List<? extends Change> changes) {
-        var delta = new TrigramFileCounter();
+    public void process(final List<? extends Change> changes) {
+        final var delta = new TrigramFileCounter();
         changes.forEach(it -> countChange(it, delta));
-        var filteredDelta = new TrigramFileCounter(delta.getAsMap().entrySet().stream()
+        final var filteredDelta = new TrigramFileCounter(delta.getAsMap().entrySet().stream()
                 .filter(it -> it.getValue() > 0)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
         counter.add(filteredDelta);
-        if (!changes.isEmpty()) pushActions(delta, changes.get(0).getTimestamp());
+        if (!changes.isEmpty()) {
+            pushActions(delta, changes.get(0).getTimestamp());
+        }
     }
 
-    private boolean validateFilename(String filename) {
+    private boolean validateFilename(final String filename) {
         return Stream.of(".java"/*, ".txt", ".kt", ".py"*/).anyMatch(filename::endsWith);
     }
 
-    private void countChange(Change change, TrigramFileCounter delta) {
+    private void countChange(final Change change, final TrigramFileCounter delta) {
         switch (change) {
             case AddChange addChange ->
                     delta.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));
@@ -133,5 +138,9 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     public TrigramFileCounterLmdb getCounter() {
         return counter;
+    }
+
+    record ByteArrIntInt(byte[] trigram, int file, int delta) {
+
     }
 }

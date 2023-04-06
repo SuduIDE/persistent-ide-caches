@@ -10,60 +10,59 @@ import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 
 public class LmdbLong2IntCounter extends LmdbLong2Int {
-    public LmdbLong2IntCounter(Env<ByteBuffer> env, String dbName) {
+
+    public LmdbLong2IntCounter(final Env<ByteBuffer> env, final String dbName) {
         super(env, dbName);
     }
 
 
-    private ByteBuffer allocateReverseLong(long l) {
-        // It's not writing
-//        return allocateLong(Long.reverseBytes(l));
-        return allocateLong(l);
-    }
-
-    public int countGet(long key) {
-        ByteBuffer res = getImpl(allocateReverseLong(key));
+    public int countGet(final long key) {
+        final ByteBuffer res = getImpl(allocateLong(key));
         return res == null ? 0 : res.getInt();
     }
 
-    public void addAll(List<LongInt> list) {
-        try (var txn = env.txnWrite()) {
-            list.forEach(it -> add(txn, it.l(), it.i()));
+    public void addAll(final List<LongInt> list) {
+        try (final var txn = env.txnWrite()) {
+            addAll(txn, list);
             txn.commit();
         }
     }
 
-    public void decreaseAll(List<LongInt> list) {
-        try (var txn = env.txnWrite()) {
+    public void addAll(final Txn<ByteBuffer> txn, final List<LongInt> list) {
+        list.forEach(it -> add(txn, it.l(), it.i()));
+    }
+
+    public void decreaseAll(final List<LongInt> list) {
+        try (final var txn = env.txnWrite()) {
             list.forEach(it -> add(txn, it.l(), -it.i()));
             txn.commit();
         }
     }
 
-    public void add(Txn<ByteBuffer> txn, long key, int delta) {
-        var keyBytes = allocateReverseLong(key);
-        var found = db.get(txn, keyBytes);
-        var val = found == null ? 0 : txn.val().getInt();
+    public void add(final Txn<ByteBuffer> txn, final long key, final int delta) {
+        final var keyBytes = allocateLong(key);
+        final var found = db.get(txn, keyBytes);
+        final var val = found == null ? 0 : txn.val().getInt();
         db.put(txn, keyBytes, allocateInt(val + delta));
     }
 
-    public void decrease(Txn<ByteBuffer> txn, long key, int delta) {
+    public void decrease(final Txn<ByteBuffer> txn, final long key, final int delta) {
         add(txn, key, -delta);
     }
 
-    public void forEachFromTo(BiConsumer<Long, Integer> consumer, long from, long to) {
-        try (var txn = env.txnRead()) {
-            try (CursorIterable<ByteBuffer> ci = db.iterate(txn,
-                    KeyRange.closedOpen(allocateReverseLong(from), allocateReverseLong(to)))) {
+    public void forEachFromTo(final BiConsumer<Long, Integer> consumer, final long from, final long to) {
+        try (final var txn = env.txnRead()) {
+            try (final CursorIterable<ByteBuffer> ci = db.iterate(txn,
+                    KeyRange.closedOpen(allocateLong(from), allocateLong(to)))) {
                 for (final CursorIterable.KeyVal<ByteBuffer> kv : ci) {
-                    long key = kv.key().getLong();
+                    final long key = kv.key().getLong();
                     consumer.accept(key, kv.val().getInt());
                 }
             }
         }
     }
 
-    public void forEach(BiConsumer<Long, Integer> consumer) {
+    public void forEach(final BiConsumer<Long, Integer> consumer) {
         forEachFromTo(consumer, 0L, Long.MAX_VALUE);
     }
 }

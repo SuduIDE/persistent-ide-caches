@@ -39,7 +39,6 @@ public class IndexesManager implements AutoCloseable {
         }
     };
 
-    private final Path trigramPath;
     private final Path lmdbGlobalPath;
     private final Path lmdbTrigramPath;
     private final Map<Class<?>, Index<?, ?>> indexes;
@@ -49,31 +48,31 @@ public class IndexesManager implements AutoCloseable {
     private final Env<ByteBuffer> globalEnv;
     private final List<Env<ByteBuffer>> envs;
 
+    private LmdbSha12Int lmdbSha12Int;
+
 
     public IndexesManager() {
         this(false);
     }
 
-    public IndexesManager(boolean resetDBs) {
+    public IndexesManager(final boolean resetDBs) {
         this(resetDBs, Path.of(""));
     }
 
-    public IndexesManager(boolean resetDBs, Path dataPath) {
+    public IndexesManager(final boolean resetDBs, final Path dataPath) {
         indexes = new HashMap<>();
         envs = new ArrayList<>();
-        trigramPath = dataPath.resolve(".trigrams");
         lmdbGlobalPath = dataPath.resolve(".lmdb");
         lmdbTrigramPath = dataPath.resolve(".lmdb.trigrams");
         if (resetDBs) {
             try {
-                if (Files.exists(trigramPath)) Files.walkFileTree(trigramPath, DELETE);
                 if (Files.exists(lmdbGlobalPath)) Files.walkFileTree(lmdbGlobalPath, DELETE);
                 if (Files.exists(lmdbTrigramPath)) Files.walkFileTree(lmdbTrigramPath, DELETE);
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        FileUtils.createParentDirectories(trigramPath, lmdbTrigramPath, lmdbGlobalPath);
+        FileUtils.createParentDirectories(lmdbTrigramPath, lmdbGlobalPath);
 
         globalEnv = initGlobalEnv();
         variables = initVariables(globalEnv);
@@ -90,57 +89,66 @@ public class IndexesManager implements AutoCloseable {
                 .open(lmdbGlobalPath.toFile());
     }
 
-    private LmdbString2Int initVariables(Env<ByteBuffer> env) {
+    private LmdbString2Int initVariables(final Env<ByteBuffer> env) {
         return new LmdbString2Int(env, "variables");
     }
 
-    private Revisions initRevisions(Env<ByteBuffer> env, LmdbString2Int variables) {
+    private Revisions initRevisions(final Env<ByteBuffer> env, final LmdbString2Int variables) {
         return new RevisionsImpl(variables, new LmdbInt2Int(globalEnv, "revisions"));
     }
 
-    private FileCache initFileCache(Env<ByteBuffer> globalEnv, LmdbString2Int variables) {
-        FileCache fileCache = new FileCache(new LmdbInt2Path(globalEnv, "files"), variables);
+    private FileCache initFileCache(final Env<ByteBuffer> globalEnv, final LmdbString2Int variables) {
+        final FileCache fileCache = new FileCache(new LmdbInt2Path(globalEnv, "files"), variables);
         fileCache.initFiles();
         fileCache.restoreFilesFromDB();
         return fileCache;
     }
 
     public EchoIndex addEchoIndex() {
-        EchoIndex echoIndex = new EchoIndex();
+        final EchoIndex echoIndex = new EchoIndex();
         indexes.put(EchoIndex.class, echoIndex);
         return echoIndex;
     }
 
     public TrigramIndex addTrigramIndex() {
-        var trigramEnv = Env.create()
+        final var trigramEnv = Env.create()
                 .setMapSize(10_485_760_00)
                 .setMaxDbs(3)
                 .setMaxReaders(2)
                 .open(lmdbTrigramPath.toFile());
         envs.add(trigramEnv);
-        TrigramIndex trigramHistoryIndex = new TrigramIndex(trigramEnv, fileCache, revisions, trigramPath);
+        final TrigramIndex trigramHistoryIndex = new TrigramIndex(trigramEnv, fileCache, revisions);
         indexes.put(TrigramIndex.class, trigramHistoryIndex);
         return trigramHistoryIndex;
     }
 
-    public void parseGitRepository(Path pathToRepository) {
+    public void parseGitRepository(final Path pathToRepository) {
         parseGitRepository(pathToRepository, Integer.MAX_VALUE);
     }
 
-    public void parseGitRepository(Path pathToRepository, int LIMIT) {
-        try (Git git = Git.open(pathToRepository.toFile())) {
-            var parser = new GitParser(git, this,
-                    new LmdbSha12Int(globalEnv, "git_commits_to_revision"),
+    public void parseGitRepository(final Path pathToRepository, final int LIMIT) {
+        try (final Git git = Git.open(pathToRepository.toFile())) {
+            lmdbSha12Int = new LmdbSha12Int(globalEnv, "git_commits_to_revision");
+            final var parser = new GitParser(git, this,
+                    lmdbSha12Int,
                     LIMIT);
             parser.parseAll();
-        } catch (IOException ioException) {
+        } catch (final IOException ioException) {
             throw new RuntimeException(ioException);
         }
     }
 
-    public void checkout(Revision targetRevision) {
+    public void checkout(final Revision targetRevision) {
         indexes.values().forEach(index -> index.checkout(targetRevision));
         revisions.setCurrentRevision(targetRevision);
+    }
+
+    public void checkoutToGitRevision(final String commitHashName) {
+        final int revision = lmdbSha12Int.get(commitHashName);
+        if (revision == -1) {
+            throw new IllegalArgumentException();
+        }
+        checkout(new Revision(revision));
     }
 
     @Override
@@ -161,11 +169,11 @@ public class IndexesManager implements AutoCloseable {
         return variables;
     }
 
-    public void applyChanges(List<Change> changes) {
+    public void applyChanges(final List<Change> changes) {
         indexes.values().forEach(it -> it.processChanges(changes));
     }
 
-    public <T, U> Index<?, ?> getIndex(Class<? extends Index<T, U>> indexClass) {
+    public <T, U> Index<?, ?> getIndex(final Class<? extends Index<T, U>> indexClass) {
         return indexes.get(indexClass);
     }
 

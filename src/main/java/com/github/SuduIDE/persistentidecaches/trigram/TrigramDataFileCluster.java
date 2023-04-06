@@ -2,8 +2,8 @@ package com.github.SuduIDE.persistentidecaches.trigram;
 
 import com.github.SuduIDE.persistentidecaches.FileCache;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
+import com.github.SuduIDE.persistentidecaches.utils.ByteArrIntIntConsumer;
 import com.github.SuduIDE.persistentidecaches.utils.ReadUtils;
-import com.github.SuduIDE.persistentidecaches.utils.TriConsumer;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,31 +18,31 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
 
     private static final int HEADER_BYTE_SIZE = Integer.BYTES;
 
-    public static void readTrigramDataFileCluster(InputStream is,
-                                                  TriConsumer<byte[], Integer, Integer> consumer) {
+    public static void readTrigramDataFileCluster(final InputStream is,
+                                                  final ByteArrIntIntConsumer consumer) {
         try {
-            var size = ReadUtils.readInt(is);
-            TrigramFileCounter deltas = new TrigramFileCounter();
+            final var size = ReadUtils.readInt(is);
+            final TrigramFileCounter deltas = new TrigramFileCounter();
             for (int i = 0; i < size; i++) {
                 TrigramCounterNode.read(is, consumer);
 //                deltas.add(it.file(), it.trigramCounter());
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException("Error on reading node", e);
         }
     }
 
     byte[] toBytes() {
         int size = HEADER_BYTE_SIZE;
-        Map<Path, List<TrigramInteger>> groupedDelta = new HashMap<>();
+        final Map<Path, List<TrigramInteger>> groupedDelta = new HashMap<>();
         deltas.forEach(((trigram, file, integer) -> groupedDelta.computeIfAbsent(file, (ignore) -> new ArrayList<>())));
         deltas.forEach(((trigram, file, integer) -> groupedDelta.get(file).add(new TrigramInteger(trigram, integer))));
-        for (var it : groupedDelta.entrySet()) {
+        for (final var it : groupedDelta.entrySet()) {
             size += TrigramCounterNode.byteSize(it.getValue());
         }
-        var bytes = ByteBuffer.allocate(size)
+        final var bytes = ByteBuffer.wrap(new byte[size])
                 .putInt(groupedDelta.size());
-        for (var it : groupedDelta.entrySet()) {
+        for (final var it : groupedDelta.entrySet()) {
             TrigramCounterNode.putInBuffer(bytes, fileCache.getNumber(it.getKey()), it.getValue());
         }
         return bytes.array();
@@ -54,28 +54,28 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
             return trigram.trigram().length + Integer.BYTES + Integer.BYTES;
         }
 
-        private void putInBuffer(ByteBuffer byteBuffer) {
+        private void putInBuffer(final ByteBuffer byteBuffer) {
             byteBuffer.put(trigram.trigram());
         }
     }
 
     private record TrigramCounterNode(File file, List<TrigramInteger> trigramCounter) {
-        public static int byteSize(List<TrigramInteger> trigramCounter) {
+        public static int byteSize(final List<TrigramInteger> trigramCounter) {
             return Integer.BYTES + Integer.BYTES +
                     trigramCounter.stream()
                             .mapToInt(TrigramInteger::sizeOf)
                             .sum();
         }
 
-        private static void putInBuffer(ByteBuffer byteBuffer, int fileInt, List<TrigramInteger> trigramCounter) {
+        private static void putInBuffer(final ByteBuffer byteBuffer, final int fileInt, final List<TrigramInteger> trigramCounter) {
             byteBuffer.putInt(fileInt);
             byteBuffer.putInt(trigramCounter.size());
             trigramCounter.forEach(((it) -> it.putInBuffer(byteBuffer)));
         }
 
-        private static void read(InputStream is, TriConsumer<byte[], Integer, Integer> consumer) throws IOException {
-            var fileInt = ReadUtils.readInt(is);
-            var size = ReadUtils.readInt(is);
+        private static void read(final InputStream is, final ByteArrIntIntConsumer consumer) throws IOException {
+            final var fileInt = ReadUtils.readInt(is);
+            final var size = ReadUtils.readInt(is);
             for (int i = 0; i < size; i++) {
                 TrigramInteger.read(is, consumer, fileInt);
             }
@@ -83,10 +83,10 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
     }
 
     private record TrigramInteger(Trigram trigram, int value) {
-        private static void read(InputStream is, TriConsumer<byte[], Integer, Integer> consumer, int fileInt)
+        private static void read(final InputStream is, final ByteArrIntIntConsumer consumer, final int fileInt)
                 throws IOException {
-            var trigram = ReadUtils.readBytes(is, 3);
-            var delta = ReadUtils.readInt(is);
+            final var trigram = ReadUtils.readBytes(is, 3);
+            final var delta = ReadUtils.readInt(is);
             consumer.accept(trigram, fileInt, delta);
         }
 
@@ -94,7 +94,7 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
             return trigram.trigram().length + Integer.BYTES;
         }
 
-        private void putInBuffer(ByteBuffer byteBuffer) {
+        private void putInBuffer(final ByteBuffer byteBuffer) {
             byteBuffer.put(trigram.trigram());
             byteBuffer.putInt(value);
         }
