@@ -8,27 +8,28 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 public class FileCache {
+
     private final String FILES = "files";
     private final LmdbInt2Path filesInProject;
     private final Map<Path, Integer> reverseFilesInProject = new HashMap<>();
     private final LmdbString2Int variables;
 
-    public FileCache(LmdbInt2Path filesInProject, LmdbString2Int variables) {
+    public FileCache(final LmdbInt2Path filesInProject, final LmdbString2Int variables) {
         this.filesInProject = filesInProject;
         this.variables = variables;
     }
 
-    public int getNumber(Path path) {
+    public int getNumber(final Path path) {
         return reverseFilesInProject.get(path);
     }
 
-    public Path getFile(int fileNum) {
+    public Path getFile(final int fileNum) {
         return filesInProject.get(fileNum);
     }
 
-    public void tryRegisterNewFile(Path path) {
+    public void tryRegisterNewFile(final Path path) {
         if (reverseFilesInProject.get(path) == null) {
-            var fileNum = variables.get(FILES);
+            final var fileNum = variables.get(FILES);
             filesInProject.put(fileNum, path);
             reverseFilesInProject.put(path, fileNum);
             variables.put(FILES, fileNum + 1);
@@ -45,7 +46,7 @@ public class FileCache {
         }
     }
 
-    public void forEach(BiConsumer<Path, Number> consumer) {
+    public void forEach(final BiConsumer<Path, Number> consumer) {
         reverseFilesInProject.forEach(consumer);
     }
 }

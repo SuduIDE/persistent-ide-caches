@@ -6,17 +6,19 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 public class FileUtils {
+
     private FileUtils() {
 
     }
-    public static void createParentDirectories(Path... paths) {
+
+    public static void createParentDirectories(final Path... paths) {
         Arrays.stream(paths).forEach(FileUtils::createParentDirectories);
     }
 
-    public static void createParentDirectories(Path path) {
+    public static void createParentDirectories(final Path path) {
         try {
             Files.createDirectories(path);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
     }

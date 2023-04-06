@@ -22,50 +22,50 @@ public class VsCodeClient {
     private static final char[] BUFFER = new char[16384];
 
     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(final String[] args) throws IOException, InterruptedException {
         if (args.length < 1) {
             throw new RuntimeException("Needs path to repository as first arg");
         }
-        try (IndexesManager manager = new IndexesManager(true)) {
-            var trigramHistoryIndex = manager.addTrigramIndex();
-            var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
-            var repPath = Path.of(args[0]);
+        try (final IndexesManager manager = new IndexesManager(true)) {
+            final var trigramHistoryIndex = manager.addTrigramIndex();
+            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
+            final var repPath = Path.of(args[0]);
             manager.parseGitRepository(repPath);
             manager.getFileCache().forEach((it, iti) -> System.err.println(it + " " + iti));
 
-            ObjectMapper objectMapper = new ObjectMapper();
-            BufferedReader scanner = new BufferedReader(new InputStreamReader(System.in));
+            final ObjectMapper objectMapper = new ObjectMapper();
+            final BufferedReader scanner = new BufferedReader(new InputStreamReader(System.in));
             while (true) {
                 String line = scanner.readLine();
                 Thread.sleep(BUSY_WAITING_MILLIS);
                 if (line.equals(CHANGES)) {
-                    var read = scanner.read(BUFFER);
+                    final var read = scanner.read(BUFFER);
                     line = new String(BUFFER, 0, read);
-                    Changes changes = objectMapper.readValue(line, Changes.class);
-                    List<Change> processedChangesList = new ArrayList<>();
-                    for (ModifyChangeFromJSON modifyChangeFromJSON : changes.modifyChanges) {
+                    final Changes changes = objectMapper.readValue(line, Changes.class);
+                    final List<Change> processedChangesList = new ArrayList<>();
+                    for (final ModifyChangeFromJSON modifyChangeFromJSON : changes.modifyChanges) {
                         final Path path = repPath.relativize(Path.of(modifyChangeFromJSON.uri));
-                        ModifyChange modifyChange = new ModifyChange(changes.timestamp,
+                        final ModifyChange modifyChange = new ModifyChange(changes.timestamp,
                                 () -> modifyChangeFromJSON.oldText,
                                 () -> modifyChangeFromJSON.newText,
                                 path,
                                 path);
                         processedChangesList.add(modifyChange);
                     }
-                    for (CreateFileChangeFromJSON createFileChangeFromJSON : changes.addChanges) {
-                        AddChange addChange = new AddChange(changes.timestamp,
+                    for (final CreateFileChangeFromJSON createFileChangeFromJSON : changes.addChanges) {
+                        final AddChange addChange = new AddChange(changes.timestamp,
                                 new FilePointer(repPath.relativize(Path.of(createFileChangeFromJSON.uri)), 0),
                                 createFileChangeFromJSON.text);
                         processedChangesList.add(addChange);
                     }
-                    for (DeleteFileChangeFromJSON deleteFileChangeFromJSON : changes.deleteChanges) {
-                        DeleteChange deleteChange = new DeleteChange(changes.timestamp,
+                    for (final DeleteFileChangeFromJSON deleteFileChangeFromJSON : changes.deleteChanges) {
+                        final DeleteChange deleteChange = new DeleteChange(changes.timestamp,
                                 new FilePointer(repPath.relativize(Path.of(deleteFileChangeFromJSON.uri)), 0),
                                 deleteFileChangeFromJSON.text);
                         processedChangesList.add(deleteChange);
                     }
-                    for (RenameFileChangeFromJSON renameFileChangeFromJSON : changes.renameChanges) {
-                        RenameChange renameChange = new RenameChange(changes.timestamp,
+                    for (final RenameFileChangeFromJSON renameFileChangeFromJSON : changes.renameChanges) {
+                        final RenameChange renameChange = new RenameChange(changes.timestamp,
                                 () -> renameFileChangeFromJSON.text,
                                 () -> renameFileChangeFromJSON.text,
                                 repPath.relativize(Path.of(renameFileChangeFromJSON.oldUri)),
@@ -75,7 +75,7 @@ public class VsCodeClient {
                     manager.nextRevision();
                     manager.applyChanges(processedChangesList);
                 } else if (line.equals(SEARCH)) {
-                    var read = scanner.read(BUFFER);
+                    final var read = scanner.read(BUFFER);
                     line = new String(BUFFER, 0, read);
                     System.out.println(trigramIndexUtils.filesForString(line));
                 }

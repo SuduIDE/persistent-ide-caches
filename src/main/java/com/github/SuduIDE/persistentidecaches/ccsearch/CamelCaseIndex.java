@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class CamelCaseIndex implements Index<String, String> {
+
     public static final Pattern CAMEL_CASE_PATTERN = Pattern.compile("[A-Za-z][a-z0-9]*([A-Z][a-z0-9]*)*");
     private final Symbols symbols = new Symbols(new HashSet<>(), new HashSet<>(), new HashSet<>());
 

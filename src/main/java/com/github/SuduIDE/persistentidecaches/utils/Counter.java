@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 public class Counter<Key> {
+
     protected final Map<Key, Integer> counter;
 
     // LIMIT=300
@@ -19,7 +20,7 @@ public class Counter<Key> {
         counter = new HashMap<>();
     }
 
-    public Counter(Map<Key, Integer> counter) {
+    public Counter(final Map<Key, Integer> counter) {
         this.counter = new HashMap<>(counter);
     }
 
@@ -27,43 +28,43 @@ public class Counter<Key> {
         return new Counter<>();
     }
 
-    public void add(Key key) {
+    public void add(final Key key) {
         add(key, 1);
     }
 
-    public void decrease(Key key) {
+    public void decrease(final Key key) {
         add(key, -1);
     }
 
-    public void add(Key key, int value) {
+    public void add(final Key key, final int value) {
         counter.compute(key, (k, v) -> v == null ? value : v + value);
     }
 
-    public void decrease(Key key, int value) {
+    public void decrease(final Key key, final int value) {
         add(key, -value);
     }
 
-    public void add(Counter<Key> other) {
+    public void add(final Counter<Key> other) {
         other.counter.forEach(this::add);
     }
 
-    public void decrease(Counter<Key> other) {
+    public void decrease(final Counter<Key> other) {
         other.counter.forEach(this::decrease);
     }
 
-    public Counter<Key> plus(Counter<Key> other) {
-        var copy = copy();
+    public Counter<Key> plus(final Counter<Key> other) {
+        final var copy = copy();
         copy.add(other);
         return copy;
     }
 
-    public Counter<Key> minus(Counter<Key> other) {
-        var copy = copy();
+    public Counter<Key> minus(final Counter<Key> other) {
+        final var copy = copy();
         copy.decrease(other);
         return copy;
     }
 
-    public int get(Key key) {
+    public int get(final Key key) {
         return counter.getOrDefault(key, 0);
     }
 
@@ -75,7 +76,7 @@ public class Counter<Key> {
         return new Counter<>(counter);
     }
 
-    public void forEach(BiConsumer<Key, Integer> function) {
+    public void forEach(final BiConsumer<Key, Integer> function) {
         counter.forEach(function);
     }
 }

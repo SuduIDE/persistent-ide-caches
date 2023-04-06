@@ -9,19 +9,19 @@ public record TrigramNode(Revision revision, Revision parent, long pointer) {
 
     private static final int BYTE_SIZE = Integer.BYTES + Integer.BYTES + Long.BYTES;
 
-    public static TrigramNode readTrigramNode(RandomAccessFile raf) {
+    public static TrigramNode readTrigramNode(final RandomAccessFile raf) {
         try {
-            var revision = new Revision(raf.readInt());
-            var parent = new Revision(raf.readInt());
-            var pointer = raf.readLong();
+            final var revision = new Revision(raf.readInt());
+            final var parent = new Revision(raf.readInt());
+            final var pointer = raf.readLong();
             return new TrigramNode(revision, parent, pointer);
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException("Error on reading node", e);
         }
     }
 
     byte[] toBytes() {
-        var bytes = ByteBuffer.allocate(BYTE_SIZE)
+        final var bytes = ByteBuffer.allocate(BYTE_SIZE)
                 .putInt(revision.revision())
                 .putInt(parent.revision())
                 .putLong(pointer);

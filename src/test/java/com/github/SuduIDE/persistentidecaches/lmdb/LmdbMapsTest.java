@@ -30,8 +30,8 @@ public class LmdbMapsTest {
 
     @Test
     void testInt2Int() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        var map = new LmdbInt2Int(env, "a");
-        var list = List.of(
+        final var map = new LmdbInt2Int(env, "a");
+        final var list = List.of(
                 Pair.of(1, 2),
                 Pair.of(3, 4),
                 Pair.of(5, 6),
@@ -42,8 +42,8 @@ public class LmdbMapsTest {
 
     @Test
     void testInt2Long() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        var map = new LmdbInt2Long(env, "a");
-        var list = List.of(
+        final var map = new LmdbInt2Long(env, "a");
+        final var list = List.of(
                 Pair.of(1, 2L),
                 Pair.of(3, 4L),
                 Pair.of(5, 6L),
@@ -54,8 +54,8 @@ public class LmdbMapsTest {
 
     @Test
     void testLong2Int() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        var map = new LmdbLong2Int(env, "a");
-        List<Pair<Long, Integer>> list = List.of(
+        final var map = new LmdbLong2Int(env, "a");
+        final List<Pair<Long, Integer>> list = List.of(
                 Pair.of(1L, 2),
                 Pair.of(3L, 4),
                 Pair.of(5L, 6),
@@ -67,8 +67,8 @@ public class LmdbMapsTest {
 
     @Test
     void testInt2File() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        var map = new LmdbInt2Path(env, "a");
-        var list = List.of(
+        final var map = new LmdbInt2Path(env, "a");
+        final var list = List.of(
                 Pair.of(1, Path.of("1")),
                 Pair.of(3, Path.of("3")),
                 Pair.of(5, Path.of("5")),
@@ -76,59 +76,61 @@ public class LmdbMapsTest {
         );
         testMap(map, list, List.of(100, 4, 0), null, Integer.TYPE, Path.class);
     }
+
     @Test
     void testString2Int() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        var map = new LmdbString2Int(env, "a");
-        var list = List.of(
+        final var map = new LmdbString2Int(env, "a");
+        final var list = List.of(
                 Pair.of("1", 1),
-                Pair.of( "3", 3),
+                Pair.of("3", 3),
                 Pair.of("5", 5),
                 Pair.of("1000", 1)
         );
         testMap(map, list, List.of("100", "4", "0"), -1, String.class, Integer.TYPE);
     }
+
     @Test
     void testInt2String() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        var map = new LmdbInt2String(env, "a");
-        var list = List.of(
+        final var map = new LmdbInt2String(env, "a");
+        final var list = List.of(
                 Pair.of(1, "1"),
                 Pair.of(3, "3"),
-                Pair.of(5,"5"),
+                Pair.of(5, "5"),
                 Pair.of(10000, "1")
         );
         testMap(map, list, List.of(100, 4, 0), null, Integer.TYPE, String.class);
     }
+
     @Test
     void testSha12String() throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        var map = new LmdbInt2String(env, "a");
-        var list = List.of(
+        final var map = new LmdbInt2String(env, "a");
+        final var list = List.of(
                 Pair.of(1, "1"),
                 Pair.of(3, "3"),
-                Pair.of(5,"5"),
+                Pair.of(5, "5"),
                 Pair.of(10000, "1")
         );
         testMap(map, list, List.of(100, 4, 0), null, Integer.TYPE, String.class);
     }
 
 
-
-    <T, V> void testMap(LmdbMap map, List<Pair<T, V>> list, List<T> missingKeys, V defaultValue,
-            Class<?> keyToken, Class<?> valueToken)
+    <T, V> void testMap(final LmdbMap map, final List<Pair<T, V>> list, final List<T> missingKeys, final V defaultValue,
+            final Class<?> keyToken, final Class<?> valueToken)
             throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        var putMethod = map.getClass().getMethod(PUT, keyToken, valueToken);
-        var getMethod = map.getClass().getMethod(GET, keyToken);
-        for (var pair : list) {
-            for (var key : missingKeys) {
+        final var putMethod = map.getClass().getMethod(PUT, keyToken, valueToken);
+        final var getMethod = map.getClass().getMethod(GET, keyToken);
+        for (final var pair : list) {
+            for (final var key : missingKeys) {
                 Assertions.assertNotEquals(pair.getLeft(), pair.getRight());
             }
         }
-        for (var pair : list) {
+        for (final var pair : list) {
             putMethod.invoke(map, pair.getLeft(), pair.getRight());
         }
-        for (var pair : list) {
+        for (final var pair : list) {
             Assertions.assertEquals(getMethod.invoke(map, pair.getLeft()), pair.getRight());
         }
-        for (var key : missingKeys) {
+        for (final var key : missingKeys) {
             Assertions.assertEquals(getMethod.invoke(map, key), defaultValue);
 
         }

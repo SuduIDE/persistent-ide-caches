@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 public class TrigramCounterTest {
-    private TrigramCounter counter;
+
     private static final List<Trigram> trigrams = List.of(
             new Trigram(new byte[]{1, 2, 3}),
             new Trigram(new byte[]{1, 4, 5}),
@@ -18,6 +18,7 @@ public class TrigramCounterTest {
             new Trigram(new byte[]{3, 3, 3}),
             new Trigram(new byte[]{4, 5, 1})
     );
+    private TrigramCounter counter;
 
     @BeforeEach
     public void resetCounter() {
@@ -56,13 +57,13 @@ public class TrigramCounterTest {
         counter.add(trigrams.get(2), -3);
         counter.add(trigrams.get(4), -5);
         counter.decrease(trigrams.get(4), 10);
-        var map = Map.of(
+        final var map = Map.of(
                 trigrams.get(0), 2,
                 trigrams.get(1), 25,
                 trigrams.get(2), -3,
                 trigrams.get(4), -15
         );
-        AtomicInteger count = new AtomicInteger();
+        final AtomicInteger count = new AtomicInteger();
         counter.forEach(((trigram, integer) -> {
             count.addAndGet(1);
             assertEquals(map.get(trigram), integer);

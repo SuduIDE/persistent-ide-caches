@@ -11,7 +11,8 @@ public abstract sealed class FileHolderChange extends Change permits ModifyChang
     private final Path newFileName;
 
 
-    public FileHolderChange(long timestamp, Supplier<String> oldFileGetter, Supplier<String> newFileGetter, Path oldFileName, Path newFileName) {
+    public FileHolderChange(final long timestamp, final Supplier<String> oldFileGetter, final Supplier<String> newFileGetter,
+            final Path oldFileName, final Path newFileName) {
         super(timestamp);
         this.oldFileGetter = oldFileGetter;
         this.newFileGetter = newFileGetter;

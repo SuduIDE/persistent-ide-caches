@@ -35,8 +35,8 @@ public class IntegrationIndexesTest {
     @Test
     public void testOneChange() {
         addFiles(FILES);
-        var trigramIndex = indexesManager.addTrigramIndex();
-        var addChanges = FILES.stream().map(it -> createAddChange(it, it.toString())).toList();
+        final var trigramIndex = indexesManager.addTrigramIndex();
+        final var addChanges = FILES.stream().map(it -> createAddChange(it, it.toString())).toList();
         trigramIndex.processChanges(addChanges);
         FILES.forEach(file ->
                 Assertions.assertEquals(List.of(file),
@@ -45,11 +45,11 @@ public class IntegrationIndexesTest {
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void addFiles(List<Path> paths) {
+    private void addFiles(final List<Path> paths) {
         paths.forEach(it -> indexesManager.getFileCache().tryRegisterNewFile(it));
     }
 
-    private AddChange createAddChange(Path path, String text) {
+    private AddChange createAddChange(final Path path, final String text) {
         return new AddChange(System.currentTimeMillis(), new FilePointer(path, 0), text);
     }
 

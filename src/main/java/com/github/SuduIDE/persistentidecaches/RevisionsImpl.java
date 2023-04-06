@@ -5,14 +5,15 @@ import com.github.SuduIDE.persistentidecaches.lmdb.LmdbString2Int;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
 
 public class RevisionsImpl implements Revisions {
+
     public static final String REVISIONS_COUNT = "revisions_count";
     public static final String CURRENT_REVISION = "current_revision";
-    private Revision currentRevision;
-    private int revisionsCount;
     private final LmdbString2Int variables;
     private final LmdbInt2Int parents;
+    private Revision currentRevision;
+    private int revisionsCount;
 
-    public RevisionsImpl(LmdbString2Int variables, LmdbInt2Int parents) {
+    public RevisionsImpl(final LmdbString2Int variables, final LmdbInt2Int parents) {
         this.variables = variables;
         this.parents = parents;
         revisionsCount = variables.get(REVISIONS_COUNT);
@@ -26,13 +27,13 @@ public class RevisionsImpl implements Revisions {
     }
 
     @Override
-    public Revision getParent(Revision revision) {
+    public Revision getParent(final Revision revision) {
         return new Revision(parents.get(revision.revision()));
     }
 
     @Override
-    public Revision addRevision(Revision parent) {
-        Revision rev = new Revision(revisionsCount++);
+    public Revision addRevision(final Revision parent) {
+        final Revision rev = new Revision(revisionsCount++);
         parents.put(rev.revision(), parent.revision());
         updateRevisionsCount();
         return rev;
@@ -51,7 +52,7 @@ public class RevisionsImpl implements Revisions {
     }
 
     @Override
-    public void setCurrentRevision(Revision revision) {
+    public void setCurrentRevision(final Revision revision) {
         currentRevision = revision;
         updateRevisionsCount();
     }

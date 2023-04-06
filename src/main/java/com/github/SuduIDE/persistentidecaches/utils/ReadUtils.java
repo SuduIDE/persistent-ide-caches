@@ -8,34 +8,34 @@ import java.nio.charset.StandardCharsets;
 
 public class ReadUtils {
 
-    public static int readInt(InputStream is) throws IOException {
+    public static int readInt(final InputStream is) throws IOException {
         return ByteBuffer.wrap(is.readNBytes(Integer.BYTES)).getInt();
     }
 
-    public static short readShort(InputStream is) throws IOException {
+    public static short readShort(final InputStream is) throws IOException {
         return ByteBuffer.wrap(is.readNBytes(Short.BYTES)).getShort();
     }
 
-    public static String readUTF(InputStream is) throws IOException {
-        var bytes = is.readNBytes(readShort(is));
+    public static String readUTF(final InputStream is) throws IOException {
+        final var bytes = is.readNBytes(readShort(is));
         return new String(bytes);
     }
 
-    public static String readNSymbols(InputStream is, int n) throws IOException {
-        StringBuilder stringBuilder = new StringBuilder();
+    public static String readNSymbols(final InputStream is, final int n) throws IOException {
+        final StringBuilder stringBuilder = new StringBuilder();
         for (int i = 0; i < n; i++) {
             try {
                 stringBuilder.append(readOneUTF8(is));
-            } catch (RuntimeException e) {
+            } catch (final RuntimeException e) {
                 throw new RuntimeException("InputStream hasn't " + n + " symbols", e);
             }
         }
         return stringBuilder.toString();
     }
 
-    public static CharBuffer readOneUTF8(InputStream is) throws IOException {
-        int first = is.read();
-        byte[] bytes = new byte[4];
+    public static CharBuffer readOneUTF8(final InputStream is) throws IOException {
+        final int first = is.read();
+        final byte[] bytes = new byte[4];
         bytes[0] = (byte) first;
         int len = 1;
         if (first == -1) {
@@ -53,7 +53,7 @@ public class ReadUtils {
             }
         }
         if (len != 1) {
-            int read = is.read(bytes, 1, len - 1);
+            final int read = is.read(bytes, 1, len - 1);
             if (read != len - 1) {
                 throw new RuntimeException("Expected UTF8 char, actual: EOF");
             }
@@ -62,8 +62,8 @@ public class ReadUtils {
 
     }
 
-    public static byte[] readBytes(InputStream is, int size) throws IOException {
-        byte[] res = new byte[size];
+    public static byte[] readBytes(final InputStream is, final int size) throws IOException {
+        final byte[] res = new byte[size];
         if (is.read(res) != size) {
             throw new RuntimeException("InputStream hasn't 3 bytes");
         }

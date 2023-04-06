@@ -46,11 +46,11 @@ public class GitParser {
     private final int commitsLimit;
     private final LmdbSha12Int gitCommits2Revisions;
 
-    public GitParser(Git git, IndexesManager indexesManager, LmdbSha12Int gitCommits2Revisions) {
+    public GitParser(final Git git, final IndexesManager indexesManager, final LmdbSha12Int gitCommits2Revisions) {
         this(git, indexesManager, gitCommits2Revisions, Integer.MAX_VALUE);
     }
 
-    public GitParser(Git git, IndexesManager indexesManager, LmdbSha12Int gitCommits2Revisions, int commitsLimit) {
+    public GitParser(final Git git, final IndexesManager indexesManager, final LmdbSha12Int gitCommits2Revisions, final int commitsLimit) {
         repository = git.getRepository();
         this.indexesManager = indexesManager;
         this.commitsLimit = commitsLimit;
@@ -59,10 +59,10 @@ public class GitParser {
 
 
     public void parseAll() throws IOException {
-        var refs = repository.getRefDatabase().getRefs();
+        final var refs = repository.getRefDatabase().getRefs();
         System.err.println("Parsing " + refs.size() + " refs");
         int cnt = 0;
-        for (Ref ref : refs) {
+        for (final Ref ref : refs) {
             parseOne(ref.getObjectId());
             System.err.println("Parsed " + (++cnt) + "/" + refs.size() + " refs");
         }
@@ -72,14 +72,14 @@ public class GitParser {
         parseOne(repository.resolve(Constants.HEAD));
     }
 
-    private void parseOne(ObjectId head) {
+    private void parseOne(final ObjectId head) {
         LOG.info("Parsing ref: " + head.getName());
-        try (RevWalk walk = new RevWalk(repository)) {
-            Deque<RevCommit> commits = new ArrayDeque<>();
+        try (final RevWalk walk = new RevWalk(repository)) {
+            final Deque<RevCommit> commits = new ArrayDeque<>();
             RevCommit firstCommit = null;
             {
                 walk.markStart(walk.parseCommit(head));
-                for (var commit : walk) {
+                for (final var commit : walk) {
                     commits.add(commit);
                     if (gitCommits2Revisions.get(commit.getName()) != -1) {
                         firstCommit = commit;
@@ -98,41 +98,42 @@ public class GitParser {
                 firstCommit = commits.removeLast();
                 parseFirstCommit(firstCommit);
             } else {
-                var rev = new Revision(gitCommits2Revisions.get(firstCommit.getName()));
+                final var rev = new Revision(gitCommits2Revisions.get(firstCommit.getName()));
                 indexesManager.getRevisions().setCurrentRevision(rev);
                 indexesManager.checkout(rev);
             }
             var prevCommit = firstCommit;
 
             int commitsParsed = 0;
-            int totalCommits = Math.min(commitsLimit, commits.size());
+            final int totalCommits = Math.min(commitsLimit, commits.size());
             while (commitsParsed < totalCommits) {
                 if (commitsParsed % 100 == 0) {
                     System.err.printf("Processed %d commits out of %d %n", commitsParsed, totalCommits);
                 }
-                var commit = commits.removeLast();
+                final var commit = commits.removeLast();
                 parseCommit(commit, prevCommit);
                 prevCommit = commit;
                 commitsParsed++;
             }
             System.err.println("Processed " + totalCommits + " commits");
-        } catch (GitAPIException | IOException e) {
+        } catch (final GitAPIException | IOException e) {
             throw new RuntimeException(e);
         }
     }
 
 
-    void sendChanges(List<Change> changes, RevCommit commit) {
+    void sendChanges(final List<Change> changes, final RevCommit commit) {
         changes.forEach(it -> {
             switch (it) {
-                case FileChange fileChange -> indexesManager.getFileCache().tryRegisterNewFile(fileChange.getPlace().file());
+                case FileChange fileChange ->
+                        indexesManager.getFileCache().tryRegisterNewFile(fileChange.getPlace().file());
                 case FileHolderChange fileHolderChange -> {
                     indexesManager.getFileCache().tryRegisterNewFile(fileHolderChange.getOldFileName());
                     indexesManager.getFileCache().tryRegisterNewFile(fileHolderChange.getNewFileName());
                 }
             }
         });
-        int rev = gitCommits2Revisions.get(commit.getName());
+        final int rev = gitCommits2Revisions.get(commit.getName());
         if (rev == -1) {
             indexesManager.getRevisions().setCurrentRevision(
                     indexesManager.getRevisions().addRevision(
@@ -144,19 +145,19 @@ public class GitParser {
         indexesManager.applyChanges(changes);
     }
 
-    private void parseCommit(RevCommit commit, RevCommit prevCommit) throws IOException, GitAPIException {
-        try (var tw = new TreeWalk(repository)) {
+    private void parseCommit(final RevCommit commit, final RevCommit prevCommit) throws IOException, GitAPIException {
+        try (final var tw = new TreeWalk(repository)) {
             tw.addTree(prevCommit.getTree());
             tw.addTree(commit.getTree());
             tw.setFilter(IndexDiffFilter.ANY_DIFF);
             tw.setFilter(AndTreeFilter.create(IndexDiffFilter.ANY_DIFF, PathSuffixFilter.create(".java")));
             tw.setRecursive(true);
-            var rawChanges = DiffEntry.scan(tw);
+            final var rawChanges = DiffEntry.scan(tw);
             sendChanges(rawChanges.stream()
                             .map(it -> {
                                 try {
                                     return processDiff(it);
-                                } catch (IOException e) {
+                                } catch (final IOException e) {
                                     throw new RuntimeException(e);
                                 }
                             })
@@ -167,17 +168,17 @@ public class GitParser {
         }
     }
 
-    Supplier<String> fileGetter(AbbreviatedObjectId abbreviatedObjectId) {
+    Supplier<String> fileGetter(final AbbreviatedObjectId abbreviatedObjectId) {
         return () -> {
             try {
                 return new String(repository.open(abbreviatedObjectId.toObjectId()).getBytes());
-            } catch (IOException e) {
+            } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         };
     }
 
-    List<Change> processDiff(DiffEntry diffEntry) throws IOException {
+    List<Change> processDiff(final DiffEntry diffEntry) throws IOException {
         return switch (diffEntry.getChangeType()) {
             case ADD -> List.of(new AddChange(System.currentTimeMillis(),
                     new FilePointer(Path.of(diffEntry.getNewPath()), 0),
@@ -210,14 +211,14 @@ public class GitParser {
         };
     }
 
-    private void parseFirstCommit(RevCommit first) {
-        int rev = gitCommits2Revisions.get(first.getName());
+    private void parseFirstCommit(final RevCommit first) {
+        final int rev = gitCommits2Revisions.get(first.getName());
         if (rev != -1) {
             indexesManager.getRevisions().setCurrentRevision(new Revision(rev));
             return;
         }
-        List<Change> changes = new ArrayList<>();
-        try (TreeWalk treeWalk = new TreeWalk(repository)) {
+        final List<Change> changes = new ArrayList<>();
+        try (final TreeWalk treeWalk = new TreeWalk(repository)) {
             treeWalk.addTree(first.getTree());
             treeWalk.setRecursive(true);
             while (treeWalk.next()) {
@@ -226,7 +227,7 @@ public class GitParser {
                         new String(repository.open(treeWalk.getObjectId(0)).getBytes()))
                 );
             }
-        } catch (IOException e) {
+        } catch (final IOException e) {
             throw new RuntimeException(e);
         }
         sendChanges(changes, first);

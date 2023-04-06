@@ -27,7 +27,7 @@ public class Main {
 //            benchmark(() -> manager.checkoutToGitRevision("a12b6970620c5b83df8d786630e9372c8f56daba"));
 //            benchmark(() -> System.out.println(trigramIndexUtils.filesForString("text")));
 //            benchmark(() -> System.out.println(trigramIndexUtils.filesForString("another text")));
-//            benchmarkCheckout(new Revision(2700), manager, manager.getRevisions());
+            benchmarkCheckout(new Revision(2600), manager, manager.getRevisions());
             benchmarkCheckout(new Revision(0), manager, manager.getRevisions());
 //        benchmarkCheckout(new Revision(100), trigramHistoryIndex);
 //        benchmarkCheckout(new Revision(50), trigramHistoryIndex);

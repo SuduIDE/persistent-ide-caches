@@ -5,11 +5,12 @@ import com.github.SuduIDE.persistentidecaches.utils.Counter;
 import java.util.Map;
 
 public class TrigramCounter extends Counter<Trigram> {
+
     public TrigramCounter() {
         super();
     }
 
-    public TrigramCounter(Map<Trigram, Integer> counter) {
+    public TrigramCounter(final Map<Trigram, Integer> counter) {
         super(counter);
     }
 }

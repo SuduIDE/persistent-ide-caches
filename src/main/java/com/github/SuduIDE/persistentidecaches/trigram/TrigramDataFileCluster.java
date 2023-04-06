@@ -19,7 +19,7 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
     private static final int HEADER_BYTE_SIZE = Integer.BYTES;
 
     public static void readTrigramDataFileCluster(final InputStream is,
-                                                  final ByteArrIntIntConsumer consumer) {
+            final ByteArrIntIntConsumer consumer) {
         try {
             final var size = ReadUtils.readInt(is);
             final TrigramFileCounter deltas = new TrigramFileCounter();
@@ -60,6 +60,7 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
     }
 
     private record TrigramCounterNode(File file, List<TrigramInteger> trigramCounter) {
+
         public static int byteSize(final List<TrigramInteger> trigramCounter) {
             return Integer.BYTES + Integer.BYTES +
                     trigramCounter.stream()
@@ -67,7 +68,8 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
                             .sum();
         }
 
-        private static void putInBuffer(final ByteBuffer byteBuffer, final int fileInt, final List<TrigramInteger> trigramCounter) {
+        private static void putInBuffer(final ByteBuffer byteBuffer, final int fileInt,
+                final List<TrigramInteger> trigramCounter) {
             byteBuffer.putInt(fileInt);
             byteBuffer.putInt(trigramCounter.size());
             trigramCounter.forEach(((it) -> it.putInBuffer(byteBuffer)));
@@ -83,6 +85,7 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
     }
 
     private record TrigramInteger(Trigram trigram, int value) {
+
         private static void read(final InputStream is, final ByteArrIntIntConsumer consumer, final int fileInt)
                 throws IOException {
             final var trigram = ReadUtils.readBytes(is, 3);

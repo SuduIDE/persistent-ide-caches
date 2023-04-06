@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 public class TrigramFileCounter extends Counter<TrigramFile> {
+
     public static final TrigramFileCounter EMPTY_COUNTER = new TrigramFileCounter();
 
     public TrigramFileCounter() {
@@ -17,27 +18,27 @@ public class TrigramFileCounter extends Counter<TrigramFile> {
         super(counter);
     }
 
-    public void add(Trigram trigram, Path file, int delta) {
+    public void add(final Trigram trigram, final Path file, final int delta) {
         add(new TrigramFile(trigram, file), delta);
     }
 
-    public void decrease(Trigram trigram, Path file, int delta) {
+    public void decrease(final Trigram trigram, final Path file, final int delta) {
         add(trigram, file, -delta);
     }
 
-    public void add(Path file, TrigramCounter counter) {
+    public void add(final Path file, final TrigramCounter counter) {
         counter.forEach((trigram, integer) -> add(trigram, file, integer));
     }
 
-    public void decrease(Path file, TrigramCounter counter) {
+    public void decrease(final Path file, final TrigramCounter counter) {
         counter.forEach((trigram, integer) -> decrease(trigram, file, integer));
     }
 
-    public void forEach(TriConsumer<Trigram, Path, Integer> consumer) {
+    public void forEach(final TriConsumer<Trigram, Path, Integer> consumer) {
         forEach(((trigramFile, integer) -> consumer.accept(trigramFile.trigram(), trigramFile.file(), integer)));
     }
 
-    public int get(Trigram trigram, Path file) {
+    public int get(final Trigram trigram, final Path file) {
         return get(new TrigramFile(trigram, file));
     }
 }

@@ -66,8 +66,12 @@ public class IndexesManager implements AutoCloseable {
         lmdbTrigramPath = dataPath.resolve(".lmdb.trigrams");
         if (resetDBs) {
             try {
-                if (Files.exists(lmdbGlobalPath)) Files.walkFileTree(lmdbGlobalPath, DELETE);
-                if (Files.exists(lmdbTrigramPath)) Files.walkFileTree(lmdbTrigramPath, DELETE);
+                if (Files.exists(lmdbGlobalPath)) {
+                    Files.walkFileTree(lmdbGlobalPath, DELETE);
+                }
+                if (Files.exists(lmdbTrigramPath)) {
+                    Files.walkFileTree(lmdbTrigramPath, DELETE);
+                }
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }

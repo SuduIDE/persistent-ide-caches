@@ -14,7 +14,6 @@ import org.junit.jupiter.api.Test;
 
 public class TrigramFileCounterTest {
 
-    private TrigramFileCounter counter;
     private static final List<Trigram> trigrams = List.of(
             new Trigram(new byte[]{1, 2, 3}),
             new Trigram(new byte[]{1, 4, 5}),
@@ -22,7 +21,6 @@ public class TrigramFileCounterTest {
             new Trigram(new byte[]{3, 3, 3}),
             new Trigram(new byte[]{4, 5, 1})
     );
-
     private static final List<Path> files = List.of(
             Path.of("1"),
             Path.of("2"),
@@ -30,6 +28,7 @@ public class TrigramFileCounterTest {
             Path.of("4"),
             Path.of("5")
     );
+    private TrigramFileCounter counter;
 
     @BeforeEach
     public void resetCounter() {
@@ -63,7 +62,7 @@ public class TrigramFileCounterTest {
     @Test
     public void testAdd2() {
         assertEquals(0, counter.get(trigrams.get(0), files.get(2)));
-        TrigramCounter trigramCounter = new TrigramCounter();
+        final TrigramCounter trigramCounter = new TrigramCounter();
         trigramCounter.add(trigrams.get(0), 2);
         counter.add(files.get(2), trigramCounter);
         assertEquals(2, counter.get(trigrams.get(0), files.get(2)));
@@ -80,7 +79,7 @@ public class TrigramFileCounterTest {
     @Test
     public void testDecrease2() {
         assertEquals(0, counter.get(trigrams.get(0), files.get(2)));
-        TrigramCounter trigramCounter = new TrigramCounter();
+        final TrigramCounter trigramCounter = new TrigramCounter();
         trigramCounter.add(trigrams.get(0), 2);
         counter.decrease(files.get(2), trigramCounter);
         assertEquals(-2, counter.get(trigrams.get(0), files.get(2)));
@@ -103,13 +102,13 @@ public class TrigramFileCounterTest {
         counter.add(trigrams.get(2), files.get(3), -3);
         counter.add(trigrams.get(4), files.get(4), -5);
         counter.decrease(trigrams.get(4), files.get(4), 10);
-        var map = Map.of(
+        final var map = Map.of(
                 new TrigramFile(trigrams.get(0), files.get(2)), 2,
                 new TrigramFile(trigrams.get(1), files.get(1)), 25,
                 new TrigramFile(trigrams.get(2), files.get(3)), -3,
                 new TrigramFile(trigrams.get(4), files.get(4)), -15
         );
-        AtomicInteger count = new AtomicInteger();
+        final AtomicInteger count = new AtomicInteger();
         counter.forEach(((trigram, file, integer) -> {
             count.addAndGet(1);
             assertEquals(map.get(new TrigramFile(trigram, file)), integer);

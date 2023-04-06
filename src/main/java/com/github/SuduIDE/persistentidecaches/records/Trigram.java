@@ -5,20 +5,20 @@ import java.util.Objects;
 
 public record Trigram(byte[] trigram) implements Comparable<Trigram> {
 
-    public Trigram(int i) {
+    public Trigram(final int i) {
         this((long) i);
     }
 
-    public Trigram(long l) {
-        this(new byte[] {(byte) (l >> 16), (byte) (l >> 8), (byte) l});
+    public Trigram(final long l) {
+        this(new byte[]{(byte) (l >> 16), (byte) (l >> 8), (byte) l});
 
     }
 
-    public static long toLong(byte[] bytes) {
+    public static long toLong(final byte[] bytes) {
         return toInt(bytes);
     }
 
-    public static int toInt(byte[] bytes) {
+    public static int toInt(final byte[] bytes) {
         return (((((Math.abs(bytes[0])) << 8) + Math.abs(bytes[1]))) << 8) + Math.abs(bytes[2]);
     }
 
@@ -31,10 +31,14 @@ public record Trigram(byte[] trigram) implements Comparable<Trigram> {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Trigram trigram1 = (Trigram) o;
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final Trigram trigram1 = (Trigram) o;
         return Arrays.equals(trigram, trigram1.trigram);
     }
 
@@ -44,7 +48,7 @@ public record Trigram(byte[] trigram) implements Comparable<Trigram> {
     }
 
     @Override
-    public int compareTo(Trigram o) {
+    public int compareTo(final Trigram o) {
         return Integer.compare(toInt(trigram), toInt(o.trigram));
     }
 

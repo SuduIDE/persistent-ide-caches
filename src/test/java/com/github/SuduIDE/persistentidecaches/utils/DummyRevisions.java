@@ -11,12 +11,12 @@ public class DummyRevisions implements Revisions {
     private Revision currentRevision;
     private int revisions = 0;
 
-    public Revision getParent(Revision revision) {
+    public Revision getParent(final Revision revision) {
         return parents.get(revision);
     }
 
-    public Revision addRevision(Revision parent) {
-        Revision rev = new Revision(revisions++);
+    public Revision addRevision(final Revision parent) {
+        final Revision rev = new Revision(revisions++);
         parents.put(rev, parent);
         return rev;
     }
@@ -30,7 +30,7 @@ public class DummyRevisions implements Revisions {
         return currentRevision;
     }
 
-    public void setCurrentRevision(Revision revision) {
+    public void setCurrentRevision(final Revision revision) {
         currentRevision = revision;
     }
 }

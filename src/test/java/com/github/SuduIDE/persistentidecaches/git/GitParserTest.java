@@ -34,7 +34,7 @@ public class GitParserTest {
     public Path gitDir;
 
     public static IndexesManager mockedIndexManager() {
-        var indexesManager = mock(IndexesManager.class);
+        final var indexesManager = mock(IndexesManager.class);
         doReturn(new DummyRevisions()).when(indexesManager).getRevisions();
         doReturn(mock(FileCache.class)).when(indexesManager).getFileCache();
         return indexesManager;
@@ -44,9 +44,9 @@ public class GitParserTest {
     @SuppressWarnings("unchecked")
     @Test
     public void testParseOneBranch() throws IOException, GitAPIException {
-        try (Git git = Git.init().setDirectory(gitDir.toFile()).call()) {
-            for (var c : FILES) {
-                Path file = gitDir.resolve(c);
+        try (final Git git = Git.init().setDirectory(gitDir.toFile()).call()) {
+            for (final var c : FILES) {
+                final Path file = gitDir.resolve(c);
                 FileUtils.createParentDirectories(file.getParent());
                 Files.writeString(file, c.toString());
                 git.add()
@@ -56,11 +56,11 @@ public class GitParserTest {
                         .setMessage(c.toString())
                         .call();
             }
-            var indexesManager = mockedIndexManager();
-            var db = Mockito.mock(LmdbSha12Int.class);
+            final var indexesManager = mockedIndexManager();
+            final var db = Mockito.mock(LmdbSha12Int.class);
             doReturn(-1).when(db).get(any());
 
-            ArgumentCaptor<List<Change>> requestCaptor = ArgumentCaptor.forClass(List.class);
+            final ArgumentCaptor<List<Change>> requestCaptor = ArgumentCaptor.forClass(List.class);
 
             new GitParser(git, indexesManager, db).parseHead();
 
@@ -70,11 +70,11 @@ public class GitParserTest {
             Assertions.assertEquals(requestCaptor.getAllValues().size(), FILES.size());
             requestCaptor.getAllValues().forEach(it -> Assertions.assertEquals(it.size(), 1));
             Assertions.assertTrue(requestCaptor.getAllValues().stream().flatMap(Collection::stream)
-                            .allMatch(it -> it instanceof AddChange));
+                    .allMatch(it -> it instanceof AddChange));
             Assertions.assertEquals(requestCaptor.getAllValues().stream().mapToLong(Collection::size).sum(),
                     FILES.size());
             FILES.forEach(file -> {
-                var change = requestCaptor.getAllValues().stream().flatMap(Collection::stream)
+                final var change = requestCaptor.getAllValues().stream().flatMap(Collection::stream)
                         .map(it -> (AddChange) it)
                         .filter(it -> it.getPlace().file().equals(file))
                         .toList();
@@ -82,9 +82,9 @@ public class GitParserTest {
                 Assertions.assertEquals(change.get(0).getAddedString(), file.toString());
             });
         }
-        try (Git git = Git.open(gitDir.toFile())) {
-            for (var c : FILES) {
-                Path file = gitDir.resolve(c);
+        try (final Git git = Git.open(gitDir.toFile())) {
+            for (final var c : FILES) {
+                final Path file = gitDir.resolve(c);
                 Files.writeString(file, c.toString().repeat(3));
                 git.add()
                         .addFilepattern(c.toString())
@@ -93,11 +93,11 @@ public class GitParserTest {
                         .setMessage(c.toString())
                         .call();
             }
-            var indexesManager = mockedIndexManager();
-            var db = Mockito.mock(LmdbSha12Int.class);
+            final var indexesManager = mockedIndexManager();
+            final var db = Mockito.mock(LmdbSha12Int.class);
             doReturn(-1).when(db).get(any());
 
-            ArgumentCaptor<List<Change>> requestCaptor = ArgumentCaptor.forClass(List.class);
+            final ArgumentCaptor<List<Change>> requestCaptor = ArgumentCaptor.forClass(List.class);
 
             new GitParser(git, indexesManager, db).parseHead();
 
@@ -111,13 +111,13 @@ public class GitParserTest {
             Assertions.assertEquals(requestCaptor.getAllValues().stream().mapToLong(Collection::size).sum(),
                     2L * FILES.size());
             FILES.forEach(file -> {
-                var changes = requestCaptor.getAllValues().stream().flatMap(Collection::stream)
+                final var changes = requestCaptor.getAllValues().stream().flatMap(Collection::stream)
                         .filter(it -> it instanceof ModifyChange)
                         .map(it -> (ModifyChange) it)
                         .filter(it -> it.getNewFileName().equals(file))
                         .toList();
                 Assertions.assertEquals(changes.size(), 1);
-                var change = changes.get(0);
+                final var change = changes.get(0);
                 Assertions.assertEquals(change.getOldFileContent(), file.toString());
                 Assertions.assertEquals(change.getNewFileContent(), file.toString().repeat(3));
                 Assertions.assertEquals(change.getOldFileName(), change.getNewFileName());
