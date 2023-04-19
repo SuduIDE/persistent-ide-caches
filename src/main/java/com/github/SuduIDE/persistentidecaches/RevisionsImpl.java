@@ -1,7 +1,7 @@
 package com.github.SuduIDE.persistentidecaches;
 
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbInt2Int;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbString2Int;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Int;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbString2Int;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
 
 public class RevisionsImpl implements Revisions {

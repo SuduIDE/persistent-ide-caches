@@ -1,7 +1,7 @@
 package com.github.SuduIDE.persistentidecaches.trigram;
 
-import com.github.SuduIDE.persistentidecaches.FileCache;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbLong2IntCounter;
+import com.github.SuduIDE.persistentidecaches.PathCache;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbLong2IntCounter;
 import com.github.SuduIDE.persistentidecaches.records.LongInt;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import com.github.SuduIDE.persistentidecaches.trigram.TrigramIndex.ByteArrIntInt;
@@ -15,12 +15,12 @@ import org.lmdbjava.Txn;
 
 public class TrigramFileCounterLmdb {
 
-    private final FileCache fileCache;
+    private final PathCache pathCache;
     private final LmdbLong2IntCounter db;
 
-    public TrigramFileCounterLmdb(final Env<ByteBuffer> env, final FileCache fileCache) {
+    public TrigramFileCounterLmdb(final Env<ByteBuffer> env, final PathCache pathCache) {
         db = new LmdbLong2IntCounter(env, "trigram_file_counter");
-        this.fileCache = fileCache;
+        this.pathCache = pathCache;
     }
 
     public int get(final Trigram trigram, final Path file) {
@@ -28,7 +28,7 @@ public class TrigramFileCounterLmdb {
     }
 
     private long getKey(final Trigram trigram, final Path file) {
-        return getKey(trigram.trigram(), fileCache.getNumber(file));
+        return getKey(trigram.trigram(), pathCache.getNumber(file));
     }
 
     private long getKey(final byte[] trigram, final int file) {
@@ -68,7 +68,7 @@ public class TrigramFileCounterLmdb {
         final List<Path> list = new ArrayList<>();
         db.forEachFromTo((trigramFileLong, val) -> {
                     if (val > 0) {
-                        list.add(fileCache.getFile(trigramFileLong.intValue()));
+                        list.add(pathCache.getObject(trigramFileLong.intValue()));
                     }
                 },
                 trigram.toLong() << Integer.SIZE,
@@ -79,7 +79,7 @@ public class TrigramFileCounterLmdb {
     public void forEach(final TriConsumer<Trigram, Path, Integer> consumer) {
         db.forEach((l, i) ->
                 consumer.accept(new Trigram(l >> Integer.SIZE),
-                        fileCache.getFile(l.intValue()),
+                        pathCache.getObject(l.intValue()),
                         i));
     }
 }

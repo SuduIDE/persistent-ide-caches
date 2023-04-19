@@ -1,8 +1,8 @@
 package com.github.SuduIDE.persistentidecaches.trigram;
 
-import com.github.SuduIDE.persistentidecaches.FileCache;
+import com.github.SuduIDE.persistentidecaches.PathCache;
 import com.github.SuduIDE.persistentidecaches.Revisions;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbInt2Bytes;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Bytes;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
 import com.github.SuduIDE.persistentidecaches.utils.ByteArrIntIntConsumer;
 import java.io.BufferedInputStream;
@@ -13,17 +13,17 @@ public class TrigramCache {
 
     private final LmdbInt2Bytes pointers;
     private final Revisions revisions;
-    private final FileCache fileCache;
+    private final PathCache pathCache;
 
-    public TrigramCache(final Revisions revisions, final LmdbInt2Bytes pointers, final FileCache fileCache) {
+    public TrigramCache(final Revisions revisions, final LmdbInt2Bytes pointers, final PathCache pathCache) {
         this.revisions = revisions;
         this.pointers = pointers;
-        this.fileCache = fileCache;
+        this.pathCache = pathCache;
     }
 
     public void pushCluster(final long timestamp, final TrigramFileCounter deltas) {
         final var revision = revisions.getCurrentRevision();
-        pointers.put(revision.revision(), new TrigramDataFileCluster(deltas, fileCache).toBytes());
+        pointers.put(revision.revision(), new TrigramDataFileCluster(deltas, pathCache).toBytes());
     }
 
     public void processDataCluster(final Revision revision, final ByteArrIntIntConsumer consumer) {

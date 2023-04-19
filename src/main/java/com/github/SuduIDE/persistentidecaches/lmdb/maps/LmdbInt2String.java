@@ -1,4 +1,4 @@
-package com.github.SuduIDE.persistentidecaches.lmdb;
+package com.github.SuduIDE.persistentidecaches.lmdb.maps;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -9,7 +9,7 @@ import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 
-public class LmdbInt2String extends LmdbAbstractMap {
+public class LmdbInt2String extends LmdbAbstractMap implements LmdbInt2Obj<String> {
 
     public LmdbInt2String(final Env<ByteBuffer> env, final String dbName) {
         super(env, env.openDbi(dbName, DbiFlags.MDB_CREATE, DbiFlags.MDB_INTEGERKEY));

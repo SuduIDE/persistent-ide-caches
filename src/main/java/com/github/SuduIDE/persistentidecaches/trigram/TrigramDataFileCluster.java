@@ -1,6 +1,6 @@
 package com.github.SuduIDE.persistentidecaches.trigram;
 
-import com.github.SuduIDE.persistentidecaches.FileCache;
+import com.github.SuduIDE.persistentidecaches.PathCache;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import com.github.SuduIDE.persistentidecaches.utils.ByteArrIntIntConsumer;
 import com.github.SuduIDE.persistentidecaches.utils.ReadUtils;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCache) {
+public record TrigramDataFileCluster(TrigramFileCounter deltas, PathCache pathCache) {
 
     private static final int HEADER_BYTE_SIZE = Integer.BYTES;
 
@@ -43,7 +43,7 @@ public record TrigramDataFileCluster(TrigramFileCounter deltas, FileCache fileCa
         final var bytes = ByteBuffer.wrap(new byte[size])
                 .putInt(groupedDelta.size());
         for (final var it : groupedDelta.entrySet()) {
-            TrigramCounterNode.putInBuffer(bytes, fileCache.getNumber(it.getKey()), it.getValue());
+            TrigramCounterNode.putInBuffer(bytes, pathCache.getNumber(it.getKey()), it.getValue());
         }
         return bytes.array();
     }

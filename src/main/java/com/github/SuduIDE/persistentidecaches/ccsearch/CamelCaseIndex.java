@@ -1,12 +1,17 @@
 package com.github.SuduIDE.persistentidecaches.ccsearch;
 
 import com.github.SuduIDE.persistentidecaches.Index;
+import com.github.SuduIDE.persistentidecaches.PathCache;
 import com.github.SuduIDE.persistentidecaches.changes.AddChange;
 import com.github.SuduIDE.persistentidecaches.changes.Change;
+import com.github.SuduIDE.persistentidecaches.changes.DeleteChange;
 import com.github.SuduIDE.persistentidecaches.changes.ModifyChange;
 import com.github.SuduIDE.persistentidecaches.records.FilePointer;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
+import com.github.SuduIDE.persistentidecaches.symbols.Symbol;
+import com.github.SuduIDE.persistentidecaches.symbols.SymbolCache;
+import com.github.SuduIDE.persistentidecaches.symbols.Symbols;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
@@ -16,11 +21,10 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -30,24 +34,31 @@ import org.apache.commons.lang3.tuple.Pair;
 public class CamelCaseIndex implements Index<String, String> {
 
     public static final Pattern CAMEL_CASE_PATTERN = Pattern.compile("[A-Za-z][a-z0-9]*([A-Z][a-z0-9]*)*");
-    Map<TrigramPriorityWord, Long> classCounter = new HashMap<>();
-    Map<TrigramPriorityWord, Long> fieldCounter = new HashMap<>();
-    Map<TrigramPriorityWord, Long> methodCounter = new HashMap<>();
+    private final SymbolCache symbolCache;
+    private final PathCache pathCache;
+    private final NavigableMap<TrigramSymbol, Long> classCounter = new TreeMap<>();
+    private final NavigableMap<TrigramSymbol, Long> fieldCounter = new TreeMap<>();
+    private final NavigableMap<TrigramSymbol, Long> methodCounter = new TreeMap<>();
 
-    private static <T extends Node & NodeWithSimpleName<?>> void findInClassMapAndAddNameInSet(
+    public CamelCaseIndex(final SymbolCache symbolCache, final PathCache pathCache) {
+        this.symbolCache = symbolCache;
+        this.pathCache = pathCache;
+    }
+
+    private static <T extends Node & NodeWithSimpleName<?>> void findInClassMapAndAddNameInList(
             final CompilationUnit compilationUnit,
             final Class<T> token,
-            final Set<String> symbols) {
+            final List<String> symbols) {
         compilationUnit.findAll(token).stream()
                 .map(NodeWithSimpleName::getNameAsString)
                 .forEach(symbols::add);
     }
 
-    private static <T extends Node, V extends NodeWithSimpleName<?>> void findInClassMapAndAddNameInSet(
+    private static <T extends Node, V extends NodeWithSimpleName<?>> void findInClassMapAndAddNameInList(
             final CompilationUnit compilationUnit,
             @SuppressWarnings("SameParameterValue") final Class<T> token,
             final Function<T, Stream<V>> flatMapper,
-            final Set<String> symbols) {
+            final List<String> symbols) {
         compilationUnit.findAll(token).stream()
                 .flatMap(flatMapper)
                 .map(NodeWithSimpleName::getNameAsString)
@@ -55,12 +66,18 @@ public class CamelCaseIndex implements Index<String, String> {
     }
 
     public static Symbols getSymbolsFromString(final String javaFile) {
-        final var compilationUnit = StaticJavaParser.parse(javaFile);
-        final var symbols = new Symbols(new HashSet<>(), new HashSet<>(), new HashSet<>());
-        findInClassMapAndAddNameInSet(compilationUnit, ClassOrInterfaceDeclaration.class,
+        final CompilationUnit compilationUnit;
+        try {
+            compilationUnit = StaticJavaParser.parse(javaFile);
+        } catch (final Exception e) {
+            System.err.println("Something went wrong on parsing java file: " + e.getMessage());
+            return new Symbols(List.of(), List.of(), List.of());
+        }
+        final var symbols = new Symbols(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+        findInClassMapAndAddNameInList(compilationUnit, ClassOrInterfaceDeclaration.class,
                 symbols.classOrInterfaceSymbols());
-        findInClassMapAndAddNameInSet(compilationUnit, MethodDeclaration.class, symbols.methodSymbols());
-        findInClassMapAndAddNameInSet(compilationUnit, FieldDeclaration.class,
+        findInClassMapAndAddNameInList(compilationUnit, MethodDeclaration.class, symbols.methodSymbols());
+        findInClassMapAndAddNameInList(compilationUnit, FieldDeclaration.class,
                 (FieldDeclaration it) -> it.getVariables().stream(),
                 symbols.fieldSymbols()
         );
@@ -116,12 +133,21 @@ public class CamelCaseIndex implements Index<String, String> {
         return 1;
     }
 
+    private static Map<TrigramSymbol, Long> collectCounter(final List<String> symbols, final int fileNum) {
+        return symbols.stream()
+                .map(it -> Pair.of(it, getInterestTrigrams(it)))
+                .flatMap(pair -> pair.getValue().stream()
+                        .map(trigram -> new TrigramSymbol(trigram, new Symbol(pair.getKey(), fileNum))))
+                .collect(Collectors.groupingBy(it -> it, Collectors.counting()));
+    }
+
     @Override
     public void processChanges(final List<? extends Change> changes) {
         changes.forEach(change -> {
                     switch (change) {
-                        case ModifyChange modifyChange -> processModifyChange(modifyChange);
-                        case AddChange addChange -> processAddChange(addChange);
+                        case final ModifyChange modifyChange -> processModifyChange(modifyChange);
+                        case final AddChange addChange -> processAddChange(addChange);
+                        case final DeleteChange deleteChange -> processDeleteChange(deleteChange);
                         default -> {
                         }
                     }
@@ -135,9 +161,29 @@ public class CamelCaseIndex implements Index<String, String> {
     }
 
     private void processModifyChange(final ModifyChange modifyChange) {
-        processAddChange(new AddChange(modifyChange.getTimestamp(),
-                new FilePointer(modifyChange.getNewFileName(), 0),
-                modifyChange.getNewFileContent()));
+        processDeleteChange(
+                new DeleteChange(modifyChange.getTimestamp(),
+                        new FilePointer(modifyChange.getOldFileName(), 0),
+                        modifyChange.getOldFileContent())
+        );
+        processAddChange(
+                new AddChange(modifyChange.getTimestamp(),
+                        new FilePointer(modifyChange.getNewFileName(), 0),
+                        modifyChange.getNewFileContent()));
+    }
+
+    private void processDeleteChange(final DeleteChange deleteChange) {
+        final var fileNum = pathCache.getNumber(deleteChange.getPlace().file());
+        deleteFileContentFromCounter(classCounter, fileNum);
+        deleteFileContentFromCounter(fieldCounter, fileNum);
+        deleteFileContentFromCounter(methodCounter, fileNum);
+    }
+
+    private void deleteFileContentFromCounter(final Map<TrigramSymbol, Long> counter, final int fileNum) {
+        counter.keySet().stream()
+                .filter(it -> it.word().pathNum() == fileNum)
+                .toList()
+                .forEach(counter::remove);
     }
 
     @Override
@@ -147,16 +193,33 @@ public class CamelCaseIndex implements Index<String, String> {
 
     private void processAddChange(final AddChange change) {
         final var symbolsFile = getSymbolsFromString(change.getAddedString());
-        classCounter = symbolsFile.classOrInterfaceSymbols().stream()
-                .map(it -> Pair.of(it, getInterestTrigrams(it)))
-                .flatMap(pair -> pair.getValue().stream()
-                        .map(trigram -> new TrigramPriorityWord(trigram, getPriority(trigram, pair.getKey()), pair.getKey())))
-                .collect(Collectors.groupingBy(it -> it, Collectors.counting()));
-
+        final var fileNum = pathCache.getNumber(change.getPlace().file());
+        symbolsFile.concatedStream().forEach(it -> symbolCache.tryRegisterNewObj(
+                new Symbol(it, pathCache.getNumber(change.getPlace().file()))));
+        classCounter.putAll(collectCounter(symbolsFile.classOrInterfaceSymbols(), fileNum));
+        fieldCounter.putAll(collectCounter(symbolsFile.fieldSymbols(), fileNum));
+        methodCounter.putAll(collectCounter(symbolsFile.methodSymbols(), fileNum));
     }
+
 
     @Override
     public void checkout(final Revision revision) {
+//        throw new UnsupportedOperationException();
+    }
 
+    public CamelCaseIndexUtils getUtils() {
+        return new CamelCaseIndexUtils(this);
+    }
+
+    public NavigableMap<TrigramSymbol, Long> getClassCounter() {
+        return classCounter;
+    }
+
+    public NavigableMap<TrigramSymbol, Long> getFieldCounter() {
+        return fieldCounter;
+    }
+
+    public NavigableMap<TrigramSymbol, Long> getMethodCounter() {
+        return methodCounter;
     }
 }

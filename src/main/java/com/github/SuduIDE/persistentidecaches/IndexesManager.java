@@ -1,11 +1,14 @@
 package com.github.SuduIDE.persistentidecaches;
 
+import com.github.SuduIDE.persistentidecaches.ccsearch.CamelCaseIndex;
 import com.github.SuduIDE.persistentidecaches.changes.Change;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbInt2Int;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbInt2Path;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbSha12Int;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbString2Int;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Int;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Path;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Symbol;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbSha12Int;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbString2Int;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
+import com.github.SuduIDE.persistentidecaches.symbols.SymbolCache;
 import com.github.SuduIDE.persistentidecaches.trigram.TrigramIndex;
 import com.github.SuduIDE.persistentidecaches.utils.EchoIndex;
 import com.github.SuduIDE.persistentidecaches.utils.FileUtils;
@@ -43,12 +46,13 @@ public class IndexesManager implements AutoCloseable {
     private final Path lmdbTrigramPath;
     private final Map<Class<?>, Index<?, ?>> indexes;
     private final Revisions revisions;
-    private final FileCache fileCache;
+    private final PathCache pathCache;
     private final LmdbString2Int variables;
     private final Env<ByteBuffer> globalEnv;
     private final List<Env<ByteBuffer>> envs;
 
     private LmdbSha12Int lmdbSha12Int;
+    private final SymbolCache symbolCache;
 
 
     public IndexesManager() {
@@ -81,9 +85,12 @@ public class IndexesManager implements AutoCloseable {
         globalEnv = initGlobalEnv();
         variables = initVariables(globalEnv);
         revisions = initRevisions(globalEnv, variables);
-        fileCache = initFileCache(globalEnv, variables);
+        pathCache = initFileCache(globalEnv, variables);
+        symbolCache = initSymbolCache(globalEnv, variables);
 
     }
+
+
 
     private Env<ByteBuffer> initGlobalEnv() {
         return Env.create()
@@ -101,11 +108,18 @@ public class IndexesManager implements AutoCloseable {
         return new RevisionsImpl(variables, new LmdbInt2Int(globalEnv, "revisions"));
     }
 
-    private FileCache initFileCache(final Env<ByteBuffer> globalEnv, final LmdbString2Int variables) {
-        final FileCache fileCache = new FileCache(new LmdbInt2Path(globalEnv, "files"), variables);
-        fileCache.initFiles();
-        fileCache.restoreFilesFromDB();
-        return fileCache;
+    private PathCache initFileCache(final Env<ByteBuffer> globalEnv, final LmdbString2Int variables) {
+        final PathCache pathCache = new PathCache(new LmdbInt2Path(globalEnv, "files"), variables);
+        pathCache.init();
+        pathCache.restoreObjectsFromDB();
+        return pathCache;
+    }
+
+    private SymbolCache initSymbolCache(final Env<ByteBuffer> globalEnv, final LmdbString2Int variables) {
+        final SymbolCache symbolCache = new SymbolCache(new LmdbInt2Symbol(globalEnv, "symbols"), variables);
+        symbolCache.init();
+        symbolCache.restoreObjectsFromDB();
+        return symbolCache;
     }
 
     public EchoIndex addEchoIndex() {
@@ -121,9 +135,15 @@ public class IndexesManager implements AutoCloseable {
                 .setMaxReaders(2)
                 .open(lmdbTrigramPath.toFile());
         envs.add(trigramEnv);
-        final TrigramIndex trigramHistoryIndex = new TrigramIndex(trigramEnv, fileCache, revisions);
+        final TrigramIndex trigramHistoryIndex = new TrigramIndex(trigramEnv, pathCache, revisions);
         indexes.put(TrigramIndex.class, trigramHistoryIndex);
         return trigramHistoryIndex;
+    }
+
+    public CamelCaseIndex addCamelCaseIndex() {
+        final var camelCaseIndex = new CamelCaseIndex(symbolCache, pathCache);
+        indexes.put(CamelCaseIndex.class, camelCaseIndex);
+        return camelCaseIndex;
     }
 
     public void parseGitRepository(final Path pathToRepository) {
@@ -136,7 +156,7 @@ public class IndexesManager implements AutoCloseable {
             final var parser = new GitParser(git, this,
                     lmdbSha12Int,
                     LIMIT);
-            parser.parseAll();
+            parser.parseHead();
         } catch (final IOException ioException) {
             throw new RuntimeException(ioException);
         }
@@ -165,8 +185,8 @@ public class IndexesManager implements AutoCloseable {
         return revisions;
     }
 
-    public FileCache getFileCache() {
-        return fileCache;
+    public PathCache getFileCache() {
+        return pathCache;
     }
 
     public LmdbString2Int getVariables() {

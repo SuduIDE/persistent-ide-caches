@@ -8,7 +8,7 @@ import com.github.SuduIDE.persistentidecaches.changes.FileChange;
 import com.github.SuduIDE.persistentidecaches.changes.FileHolderChange;
 import com.github.SuduIDE.persistentidecaches.changes.ModifyChange;
 import com.github.SuduIDE.persistentidecaches.changes.RenameChange;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbSha12Int;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbSha12Int;
 import com.github.SuduIDE.persistentidecaches.records.FilePointer;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
 import java.io.IOException;
@@ -125,11 +125,11 @@ public class GitParser {
     void sendChanges(final List<Change> changes, final RevCommit commit) {
         changes.forEach(it -> {
             switch (it) {
-                case FileChange fileChange ->
-                        indexesManager.getFileCache().tryRegisterNewFile(fileChange.getPlace().file());
-                case FileHolderChange fileHolderChange -> {
-                    indexesManager.getFileCache().tryRegisterNewFile(fileHolderChange.getOldFileName());
-                    indexesManager.getFileCache().tryRegisterNewFile(fileHolderChange.getNewFileName());
+                case final FileChange fileChange ->
+                        indexesManager.getFileCache().tryRegisterNewObj(fileChange.getPlace().file());
+                case final FileHolderChange fileHolderChange -> {
+                    indexesManager.getFileCache().tryRegisterNewObj(fileHolderChange.getOldFileName());
+                    indexesManager.getFileCache().tryRegisterNewObj(fileHolderChange.getNewFileName());
                 }
             }
         });

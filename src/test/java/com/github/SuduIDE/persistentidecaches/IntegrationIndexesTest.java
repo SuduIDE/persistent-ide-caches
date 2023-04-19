@@ -46,7 +46,7 @@ public class IntegrationIndexesTest {
 
     @SuppressWarnings("SameParameterValue")
     private void addFiles(final List<Path> paths) {
-        paths.forEach(it -> indexesManager.getFileCache().tryRegisterNewFile(it));
+        paths.forEach(it -> indexesManager.getFileCache().tryRegisterNewObj(it));
     }
 
     private AddChange createAddChange(final Path path, final String text) {

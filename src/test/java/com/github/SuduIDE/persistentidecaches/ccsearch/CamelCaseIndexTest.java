@@ -1,7 +1,8 @@
 package com.github.SuduIDE.persistentidecaches.ccsearch;
 
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
-import java.util.Set;
+import com.github.SuduIDE.persistentidecaches.symbols.Symbols;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -18,9 +19,9 @@ class CamelCaseIndexTest {
                 }
                 """;
         Assertions.assertEquals(CamelCaseIndex.getSymbolsFromString(javaAClass), new Symbols(
-                Set.of("MyBestClass"),
-                Set.of("myCuteInt"),
-                Set.of("myBarMethod")
+                List.of("MyBestClass"),
+                List.of("myCuteInt"),
+                List.of("myBarMethod")
         ));
     }
 

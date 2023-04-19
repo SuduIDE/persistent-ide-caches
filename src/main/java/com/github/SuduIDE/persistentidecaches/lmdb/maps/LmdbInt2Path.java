@@ -1,11 +1,11 @@
-package com.github.SuduIDE.persistentidecaches.lmdb;
+package com.github.SuduIDE.persistentidecaches.lmdb.maps;
 
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.function.BiConsumer;
 import org.lmdbjava.Env;
 
-public class LmdbInt2Path implements LmdbMap {
+public class LmdbInt2Path implements LmdbMap, LmdbInt2Obj<Path> {
 
     private final LmdbInt2String db;
 

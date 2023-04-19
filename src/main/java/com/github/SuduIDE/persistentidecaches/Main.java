@@ -17,21 +17,26 @@ public class Main {
             throw new RuntimeException("Needs path to repository as first arg");
         }
         try (final IndexesManager manager = new IndexesManager(true)) {
-            final var trigramHistoryIndex = manager.addTrigramIndex();
-            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
-//            final int LIMIT = 50;
+//            final var trigramHistoryIndex = manager.addTrigramIndex();
+//            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
+            final var camelCaseIndex = manager.addCamelCaseIndex();
+            final var camelCaseIndexUtils = camelCaseIndex.getUtils();
+////            final int LIMIT = 50;
             final int LIMIT = Integer.MAX_VALUE;
             benchmark(() -> manager.parseGitRepository(Path.of(args[0]), LIMIT));
-            System.out.println("Current revision: " + manager.getRevisions().getCurrentRevision());
-//            trigramHistoryIndex.getCounter().forEach((tri, file, i) -> System.out.println(tri + " " + file + " " + i));
+            camelCaseIndexUtils.getSymbolsFromClasses("ArrSe").forEach(System.out::println);
+            camelCaseIndexUtils.getSymbolsFromClasses("Impl").forEach(System.out::println);
+            camelCaseIndexUtils.getSymbolsFromClasses("HFVis").forEach(System.out::println);
+            //            System.out.println("Current revision: " + manager.getRevisions().getCurrentRevision());
+////            trigramHistoryIndex.getCounter().forEach((tri, file, i) -> System.out.println(tri + " " + file + " " + i));
 //            benchmark(() -> manager.checkoutToGitRevision("a12b6970620c5b83df8d786630e9372c8f56daba"));
-//            benchmark(() -> System.out.println(trigramIndexUtils.filesForString("text")));
-//            benchmark(() -> System.out.println(trigramIndexUtils.filesForString("another text")));
-            benchmarkCheckout(new Revision(2600), manager, manager.getRevisions());
-            benchmarkCheckout(new Revision(0), manager, manager.getRevisions());
-//        benchmarkCheckout(new Revision(100), trigramHistoryIndex);
-//        benchmarkCheckout(new Revision(50), trigramHistoryIndex);
-//        benchmarkCheckout(new Revision(LIMIT - 1), trigramHistoryIndex);
+////            benchmark(() -> System.out.println(trigramIndexUtils.filesForString("text")));
+////            benchmark(() -> System.out.println(trigramIndexUtils.filesForString("another text")));
+//            benchmarkCheckout(new Revision(2600), manager, manager.getRevisions());
+//            benchmark(() -> manager.checkoutToGitRevision("a12b6970620c5b83df8d786630e9372c8f56daba"));
+////        benchmarkCheckout(new Revision(100), trigramHistoryIndex);
+////        benchmarkCheckout(new Revision(50), trigramHistoryIndex);
+////        benchmarkCheckout(new Revision(LIMIT - 1), trigramHistoryIndex);
         }
     }
 

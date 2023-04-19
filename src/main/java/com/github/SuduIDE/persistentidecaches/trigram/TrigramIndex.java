@@ -1,7 +1,7 @@
 package com.github.SuduIDE.persistentidecaches.trigram;
 
-import com.github.SuduIDE.persistentidecaches.FileCache;
 import com.github.SuduIDE.persistentidecaches.Index;
+import com.github.SuduIDE.persistentidecaches.PathCache;
 import com.github.SuduIDE.persistentidecaches.Revisions;
 import com.github.SuduIDE.persistentidecaches.changes.AddChange;
 import com.github.SuduIDE.persistentidecaches.changes.Change;
@@ -9,7 +9,7 @@ import com.github.SuduIDE.persistentidecaches.changes.CopyChange;
 import com.github.SuduIDE.persistentidecaches.changes.DeleteChange;
 import com.github.SuduIDE.persistentidecaches.changes.ModifyChange;
 import com.github.SuduIDE.persistentidecaches.changes.RenameChange;
-import com.github.SuduIDE.persistentidecaches.lmdb.LmdbInt2Bytes;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Bytes;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import com.github.SuduIDE.persistentidecaches.records.TrigramFile;
@@ -28,11 +28,11 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     private final TrigramFileCounterLmdb counter;
     private final TrigramIndexUtils trigramIndexUtils;
 
-    public TrigramIndex(final Env<ByteBuffer> env, final FileCache fileCache, final Revisions revisions) {
+    public TrigramIndex(final Env<ByteBuffer> env, final PathCache pathCache, final Revisions revisions) {
         this.env = env;
-        cache = new TrigramCache(revisions, new LmdbInt2Bytes(env, "trigram_deltas"), fileCache);
+        cache = new TrigramCache(revisions, new LmdbInt2Bytes(env, "trigram_deltas"), pathCache);
         this.revisions = revisions;
-        counter = new TrigramFileCounterLmdb(this.env, fileCache);
+        counter = new TrigramFileCounterLmdb(this.env, pathCache);
         trigramIndexUtils = new TrigramIndexUtils(this);
     }
 
@@ -119,19 +119,19 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
 
     private void countChange(final Change change, final TrigramFileCounter delta) {
         switch (change) {
-            case AddChange addChange ->
+            case final AddChange addChange ->
                     delta.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));
-            case ModifyChange modifyChange -> {
+            case final ModifyChange modifyChange -> {
                 delta.decrease(modifyChange.getOldFileName(), getTrigramsCount(modifyChange.getOldFileContent()));
                 delta.add(modifyChange.getNewFileName(), getTrigramsCount(modifyChange.getNewFileContent()));
             }
-            case CopyChange copyChange ->
+            case final CopyChange copyChange ->
                     delta.add(copyChange.getNewFileName(), getTrigramsCount(copyChange.getNewFileContent()));
-            case RenameChange renameChange -> {
+            case final RenameChange renameChange -> {
                 delta.decrease(renameChange.getOldFileName(), getTrigramsCount(renameChange.getOldFileContent()));
                 delta.add(renameChange.getNewFileName(), getTrigramsCount(renameChange.getNewFileContent()));
             }
-            case DeleteChange deleteChange ->
+            case final DeleteChange deleteChange ->
                     delta.add(deleteChange.getPlace().file(), getTrigramsCount(deleteChange.getDeletedString()));
         }
     }

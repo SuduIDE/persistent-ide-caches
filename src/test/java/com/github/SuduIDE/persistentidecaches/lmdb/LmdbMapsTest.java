@@ -1,5 +1,12 @@
 package com.github.SuduIDE.persistentidecaches.lmdb;
 
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Int;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Long;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Path;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2String;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbLong2Int;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbMap;
+import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbString2Int;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;

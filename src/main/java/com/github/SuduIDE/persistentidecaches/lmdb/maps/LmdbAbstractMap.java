@@ -1,4 +1,4 @@
-package com.github.SuduIDE.persistentidecaches.lmdb;
+package com.github.SuduIDE.persistentidecaches.lmdb.maps;
 
 import java.io.Closeable;
 import java.nio.ByteBuffer;

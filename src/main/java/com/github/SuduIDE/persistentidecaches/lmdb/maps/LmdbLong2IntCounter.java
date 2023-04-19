@@ -1,4 +1,4 @@
-package com.github.SuduIDE.persistentidecaches.lmdb;
+package com.github.SuduIDE.persistentidecaches.lmdb.maps;
 
 import com.github.SuduIDE.persistentidecaches.records.LongInt;
 import java.nio.ByteBuffer;
