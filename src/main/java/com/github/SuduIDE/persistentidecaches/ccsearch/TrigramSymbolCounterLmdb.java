@@ -1,22 +1,25 @@
-package com.github.SuduIDE.persistentidecaches.trigram;
+package com.github.SuduIDE.persistentidecaches.ccsearch;
 
 import com.github.SuduIDE.persistentidecaches.lmdb.CountingCacheImpl;
 import com.github.SuduIDE.persistentidecaches.lmdb.TrigramObjCounterLmdb;
 import com.github.SuduIDE.persistentidecaches.records.ByteArrIntInt;
 import com.github.SuduIDE.persistentidecaches.records.LongInt;
+import com.github.SuduIDE.persistentidecaches.symbols.Symbol;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.lmdbjava.Env;
 import org.lmdbjava.Txn;
 
-public class TrigramFileCounterLmdb extends TrigramObjCounterLmdb<Path> {
+public class TrigramSymbolCounterLmdb extends TrigramObjCounterLmdb<Symbol> {
 
-    public TrigramFileCounterLmdb(final Env<ByteBuffer> env, final CountingCacheImpl<Path> pathCache) {
-        super(pathCache, env, "trigram_file_counter");
+    public TrigramSymbolCounterLmdb(final Env<ByteBuffer> env, final CountingCacheImpl<Symbol> symbolCache,
+            final String dbNameSuffix) {
+        super(symbolCache, env, "trigram_symbol_counter_" + dbNameSuffix);
     }
-    public void add(final TrigramFileCounter counter) {
+
+    public void add(final Map<TrigramSymbol, Integer> counter) {
         db.addAll(counterToList(counter));
     }
 
@@ -26,13 +29,14 @@ public class TrigramFileCounterLmdb extends TrigramObjCounterLmdb<Path> {
                 .toList());
     }
 
-    public void decrease(final TrigramFileCounter counter) {
+    public void decrease(final Map<TrigramSymbol, Integer> counter) {
         db.decreaseAll(counterToList(counter));
     }
 
-    private List<LongInt> counterToList(final TrigramFileCounter counter) {
+    private List<LongInt> counterToList(final Map<TrigramSymbol, Integer> counter) {
         final List<LongInt> list = new ArrayList<>();
-        counter.forEach((trigram, file, integer) -> list.add(new LongInt(getKey(trigram, file), integer)));
+        counter.forEach((trigramSymbol, integer) ->
+                list.add(new LongInt(getKey(trigramSymbol.trigram(), trigramSymbol.word()), integer)));
         return list;
     }
 }

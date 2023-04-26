@@ -2,13 +2,14 @@ package com.github.SuduIDE.persistentidecaches;
 
 import com.github.SuduIDE.persistentidecaches.ccsearch.CamelCaseIndex;
 import com.github.SuduIDE.persistentidecaches.changes.Change;
+import com.github.SuduIDE.persistentidecaches.lmdb.CountingCacheImpl;
 import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Int;
 import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Path;
 import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbInt2Symbol;
 import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbSha12Int;
 import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbString2Int;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
-import com.github.SuduIDE.persistentidecaches.symbols.SymbolCache;
+import com.github.SuduIDE.persistentidecaches.symbols.Symbol;
 import com.github.SuduIDE.persistentidecaches.trigram.TrigramIndex;
 import com.github.SuduIDE.persistentidecaches.utils.EchoIndex;
 import com.github.SuduIDE.persistentidecaches.utils.FileUtils;
@@ -44,15 +45,15 @@ public class IndexesManager implements AutoCloseable {
 
     private final Path lmdbGlobalPath;
     private final Path lmdbTrigramPath;
+    private final Path lmdbCamelCaseSearchPath;
     private final Map<Class<?>, Index<?, ?>> indexes;
     private final Revisions revisions;
-    private final PathCache pathCache;
+    private final CountingCacheImpl<Path> pathCache;
     private final LmdbString2Int variables;
     private final Env<ByteBuffer> globalEnv;
     private final List<Env<ByteBuffer>> envs;
-
+    private final CountingCacheImpl<Symbol> symbolCache;
     private LmdbSha12Int lmdbSha12Int;
-    private final SymbolCache symbolCache;
 
 
     public IndexesManager() {
@@ -68,6 +69,7 @@ public class IndexesManager implements AutoCloseable {
         envs = new ArrayList<>();
         lmdbGlobalPath = dataPath.resolve(".lmdb");
         lmdbTrigramPath = dataPath.resolve(".lmdb.trigrams");
+        lmdbCamelCaseSearchPath = dataPath.resolve(".lmdb.camelCaseSearch");
         if (resetDBs) {
             try {
                 if (Files.exists(lmdbGlobalPath)) {
@@ -76,11 +78,14 @@ public class IndexesManager implements AutoCloseable {
                 if (Files.exists(lmdbTrigramPath)) {
                     Files.walkFileTree(lmdbTrigramPath, DELETE);
                 }
+                if (Files.exists(lmdbTrigramPath)) {
+                    Files.walkFileTree(lmdbTrigramPath, DELETE);
+                }
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        FileUtils.createParentDirectories(lmdbTrigramPath, lmdbGlobalPath);
+        FileUtils.createParentDirectories(lmdbTrigramPath, lmdbGlobalPath, lmdbCamelCaseSearchPath);
 
         globalEnv = initGlobalEnv();
         variables = initVariables(globalEnv);
@@ -89,7 +94,6 @@ public class IndexesManager implements AutoCloseable {
         symbolCache = initSymbolCache(globalEnv, variables);
 
     }
-
 
 
     private Env<ByteBuffer> initGlobalEnv() {
@@ -108,15 +112,23 @@ public class IndexesManager implements AutoCloseable {
         return new RevisionsImpl(variables, new LmdbInt2Int(globalEnv, "revisions"));
     }
 
-    private PathCache initFileCache(final Env<ByteBuffer> globalEnv, final LmdbString2Int variables) {
-        final PathCache pathCache = new PathCache(new LmdbInt2Path(globalEnv, "files"), variables);
+    private CountingCacheImpl<Path> initFileCache(final Env<ByteBuffer> globalEnv, final LmdbString2Int variables) {
+        final CountingCacheImpl<Path>
+                pathCache = new CountingCacheImpl<>("files",
+                new LmdbInt2Path(globalEnv, "files"),
+                variables);
         pathCache.init();
         pathCache.restoreObjectsFromDB();
         return pathCache;
     }
 
-    private SymbolCache initSymbolCache(final Env<ByteBuffer> globalEnv, final LmdbString2Int variables) {
-        final SymbolCache symbolCache = new SymbolCache(new LmdbInt2Symbol(globalEnv, "symbols"), variables);
+    private CountingCacheImpl<Symbol> initSymbolCache(
+            final Env<ByteBuffer> globalEnv, final LmdbString2Int variables) {
+        final CountingCacheImpl<Symbol>
+                symbolCache =
+                new CountingCacheImpl<>("symbols",
+                        new LmdbInt2Symbol(globalEnv, "symbols"),
+                        variables);
         symbolCache.init();
         symbolCache.restoreObjectsFromDB();
         return symbolCache;
@@ -141,7 +153,13 @@ public class IndexesManager implements AutoCloseable {
     }
 
     public CamelCaseIndex addCamelCaseIndex() {
-        final var camelCaseIndex = new CamelCaseIndex(symbolCache, pathCache);
+        final var camelCaseEnv = Env.create()
+                .setMapSize(10_485_760_00)
+                .setMaxDbs(3)
+                .setMaxReaders(2)
+                .open(lmdbCamelCaseSearchPath.toFile());
+        envs.add(camelCaseEnv);
+        final var camelCaseIndex = new CamelCaseIndex(camelCaseEnv, symbolCache, pathCache);
         indexes.put(CamelCaseIndex.class, camelCaseIndex);
         return camelCaseIndex;
     }
@@ -185,7 +203,7 @@ public class IndexesManager implements AutoCloseable {
         return revisions;
     }
 
-    public PathCache getFileCache() {
+    public CountingCache<Path> getFileCache() {
         return pathCache;
     }
 

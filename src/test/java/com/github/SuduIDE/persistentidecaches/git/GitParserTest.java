@@ -8,11 +8,11 @@ import static org.mockito.Mockito.times;
 
 import com.github.SuduIDE.persistentidecaches.GitParser;
 import com.github.SuduIDE.persistentidecaches.IndexesManager;
-import com.github.SuduIDE.persistentidecaches.PathCache;
 import com.github.SuduIDE.persistentidecaches.changes.AddChange;
 import com.github.SuduIDE.persistentidecaches.changes.Change;
 import com.github.SuduIDE.persistentidecaches.changes.ModifyChange;
 import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbSha12Int;
+import com.github.SuduIDE.persistentidecaches.utils.DummyCountingCache;
 import com.github.SuduIDE.persistentidecaches.utils.DummyRevisions;
 import com.github.SuduIDE.persistentidecaches.utils.FileUtils;
 import java.io.IOException;
@@ -36,7 +36,7 @@ public class GitParserTest {
     public static IndexesManager mockedIndexManager() {
         final var indexesManager = mock(IndexesManager.class);
         doReturn(new DummyRevisions()).when(indexesManager).getRevisions();
-        doReturn(mock(PathCache.class)).when(indexesManager).getFileCache();
+        doReturn(new DummyCountingCache<>()).when(indexesManager).getFileCache();
         return indexesManager;
     }
 

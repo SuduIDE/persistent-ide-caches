@@ -3,11 +3,8 @@ package com.github.SuduIDE.persistentidecaches.ccsearch;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import com.github.SuduIDE.persistentidecaches.symbols.Symbol;
 import java.util.List;
-import java.util.NavigableMap;
 import java.util.NavigableSet;
-import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 
 public class CamelCaseIndexUtils {
 
@@ -27,14 +24,15 @@ public class CamelCaseIndexUtils {
         return trigramSet;
     }
 
-    private Set<Symbol> symbolsForTrigramInCounter(final Trigram trigram,
-            final NavigableMap<TrigramSymbol, Long> counter) {
-        return counter.subMap(new TrigramSymbol(trigram, Symbol.MIN), new TrigramSymbol(trigram, Symbol.MAX)).keySet()
-                .stream().map(TrigramSymbol::word).collect(Collectors.toSet());
+    private List<Symbol> symbolsForTrigramInCounter(final Trigram trigram,
+            final TrigramSymbolCounterLmdb counter) {
+//        return counter.subMap(new TrigramSymbol(trigram, Symbol.MIN), new TrigramSymbol(trigram, Symbol.MAX)).keySet()
+//                .stream().map(TrigramSymbol::word).collect(Collectors.toSet());
+        return counter.getObjForTrigram(trigram);
     }
 
     public List<Symbol> getSymbols(final String request,
-            final NavigableMap<TrigramSymbol, Long> counter) {
+            final TrigramSymbolCounterLmdb counter) {
         final var trigramSet = getTrigramsSet(request);
         final var fileSet = new TreeSet<>(symbolsForTrigramInCounter(trigramSet.first(), counter));
         trigramSet.pollFirst();

@@ -1,6 +1,6 @@
 package com.github.SuduIDE.persistentidecaches.trigram;
 
-import com.github.SuduIDE.persistentidecaches.PathCache;
+import com.github.SuduIDE.persistentidecaches.lmdb.CountingCacheImpl;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import com.github.SuduIDE.persistentidecaches.utils.ByteArrIntIntConsumer;
 import com.github.SuduIDE.persistentidecaches.utils.ReadUtils;
@@ -14,7 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public record TrigramDataFileCluster(TrigramFileCounter deltas, PathCache pathCache) {
+public record TrigramDataFileCluster(TrigramFileCounter deltas, CountingCacheImpl<Path> pathCache) {
 
     private static final int HEADER_BYTE_SIZE = Integer.BYTES;
 

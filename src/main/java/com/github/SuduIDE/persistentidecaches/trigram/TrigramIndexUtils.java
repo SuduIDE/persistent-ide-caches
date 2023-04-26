@@ -17,9 +17,9 @@ public class TrigramIndexUtils {
 
     public List<Path> filesForString(final String str) {
         final var trigramSet = CamelCaseIndexUtils.getTrigramsSet(str);
-        final Set<Path> fileSet = new TreeSet<>(trigramIndex.getCounter().getFilesForTrigram(trigramSet.first()));
+        final Set<Path> fileSet = new TreeSet<>(trigramIndex.getCounter().getObjForTrigram(trigramSet.first()));
         trigramSet.pollFirst();
-        trigramSet.forEach(it -> fileSet.retainAll(trigramIndex.getCounter().getFilesForTrigram(it)));
+        trigramSet.forEach(it -> fileSet.retainAll(trigramIndex.getCounter().getObjForTrigram(it)));
         return new ArrayList<>(fileSet);
     }
 }

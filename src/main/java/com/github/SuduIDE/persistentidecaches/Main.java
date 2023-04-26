@@ -24,10 +24,14 @@ public class Main {
 ////            final int LIMIT = 50;
             final int LIMIT = Integer.MAX_VALUE;
             benchmark(() -> manager.parseGitRepository(Path.of(args[0]), LIMIT));
+//            manager.getFileCache().forEach(((path, number) -> System.out.println(path + " " + number)));
+//            Map<Symbol, Integer> symbols = new TreeMap<>();
+//            camelCaseIndex.getClassCounter().forEach(((trigram, symbol, integer) -> symbols.put(symbol, integer)));
+//            symbols.forEach((symbol, integer) -> System.out.println(symbol + " " + integer));
             camelCaseIndexUtils.getSymbolsFromClasses("ArrSe").forEach(System.out::println);
             camelCaseIndexUtils.getSymbolsFromClasses("Impl").forEach(System.out::println);
             camelCaseIndexUtils.getSymbolsFromClasses("HFVis").forEach(System.out::println);
-            //            System.out.println("Current revision: " + manager.getRevisions().getCurrentRevision());
+//            System.out.println("Current revision: " + manager.getRevisions().getCurrentRevision());
 ////            trigramHistoryIndex.getCounter().forEach((tri, file, i) -> System.out.println(tri + " " + file + " " + i));
 //            benchmark(() -> manager.checkoutToGitRevision("a12b6970620c5b83df8d786630e9372c8f56daba"));
 ////            benchmark(() -> System.out.println(trigramIndexUtils.filesForString("text")));
