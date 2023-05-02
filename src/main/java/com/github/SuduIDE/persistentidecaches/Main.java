@@ -21,12 +21,12 @@ public class Main {
 //            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
             final var camelCaseIndex = manager.addCamelCaseIndex();
             final var camelCaseIndexUtils = camelCaseIndex.getUtils();
-////            final int LIMIT = 50;
+//            final int LIMIT = 10;
             final int LIMIT = Integer.MAX_VALUE;
             benchmark(() -> manager.parseGitRepository(Path.of(args[0]), LIMIT));
 //            manager.getFileCache().forEach(((path, number) -> System.out.println(path + " " + number)));
 //            Map<Symbol, Integer> symbols = new TreeMap<>();
-//            camelCaseIndex.getClassCounter().forEach(((trigram, symbol, integer) -> symbols.put(symbol, integer)));
+//            camelCaseIndex.getClassCounter().forEach((trigram, symbol, integer) -> System.out.println(trigram.toPrettyString() + " " + symbol + " " + integer));
 //            symbols.forEach((symbol, integer) -> System.out.println(symbol + " " + integer));
             camelCaseIndexUtils.getSymbolsFromClasses("ArrSe").forEach(System.out::println);
             camelCaseIndexUtils.getSymbolsFromClasses("Impl").forEach(System.out::println);

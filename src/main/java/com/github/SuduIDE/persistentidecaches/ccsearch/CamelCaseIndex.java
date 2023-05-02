@@ -11,20 +11,12 @@ import com.github.SuduIDE.persistentidecaches.records.Revision;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import com.github.SuduIDE.persistentidecaches.symbols.Symbol;
 import com.github.SuduIDE.persistentidecaches.symbols.Symbols;
-import com.github.javaparser.StaticJavaParser;
-import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.Node;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.body.FieldDeclaration;
-import com.github.javaparser.ast.body.MethodDeclaration;
-import com.github.javaparser.ast.nodeTypes.NodeWithSimpleName;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -49,43 +41,8 @@ public class CamelCaseIndex implements Index<String, String> {
         classCounter = new TrigramSymbolCounterLmdb(env, symbolCache, "class");
     }
 
-    private static <T extends Node & NodeWithSimpleName<?>> void findInClassMapAndAddNameInList(
-            final CompilationUnit compilationUnit,
-            final Class<T> token,
-            final List<String> symbols) {
-        compilationUnit.findAll(token).stream()
-                .map(NodeWithSimpleName::getNameAsString)
-                .forEach(symbols::add);
-    }
-
-    private static <T extends Node, V extends NodeWithSimpleName<?>> void findInClassMapAndAddNameInList(
-            final CompilationUnit compilationUnit,
-            @SuppressWarnings("SameParameterValue") final Class<T> token,
-            final Function<T, Stream<V>> flatMapper,
-            final List<String> symbols) {
-        compilationUnit.findAll(token).stream()
-                .flatMap(flatMapper)
-                .map(NodeWithSimpleName::getNameAsString)
-                .forEach(symbols::add);
-    }
-
     public static Symbols getSymbolsFromString(final String javaFile) {
-        final CompilationUnit compilationUnit;
-        try {
-            compilationUnit = StaticJavaParser.parse(javaFile);
-        } catch (final Exception e) {
-            System.err.println("Something went wrong on parsing java file: " + e.getMessage());
-            return new Symbols(List.of(), List.of(), List.of());
-        }
-        final var symbols = new Symbols(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
-        findInClassMapAndAddNameInList(compilationUnit, ClassOrInterfaceDeclaration.class,
-                symbols.classOrInterfaceSymbols());
-        findInClassMapAndAddNameInList(compilationUnit, MethodDeclaration.class, symbols.methodSymbols());
-        findInClassMapAndAddNameInList(compilationUnit, FieldDeclaration.class,
-                (FieldDeclaration it) -> it.getVariables().stream(),
-                symbols.fieldSymbols()
-        );
-        return symbols;
+        return JavaSymbolListener.getSymbolsFromString(javaFile);
     }
 
     static boolean isCamelCase(final String name) {

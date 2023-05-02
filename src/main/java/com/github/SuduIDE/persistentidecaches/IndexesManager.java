@@ -78,8 +78,8 @@ public class IndexesManager implements AutoCloseable {
                 if (Files.exists(lmdbTrigramPath)) {
                     Files.walkFileTree(lmdbTrigramPath, DELETE);
                 }
-                if (Files.exists(lmdbTrigramPath)) {
-                    Files.walkFileTree(lmdbTrigramPath, DELETE);
+                if (Files.exists(lmdbCamelCaseSearchPath)) {
+                    Files.walkFileTree(lmdbCamelCaseSearchPath, DELETE);
                 }
             } catch (final IOException e) {
                 throw new RuntimeException(e);

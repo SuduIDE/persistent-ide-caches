@@ -220,6 +220,7 @@ public class GitParser {
         final List<Change> changes = new ArrayList<>();
         try (final TreeWalk treeWalk = new TreeWalk(repository)) {
             treeWalk.addTree(first.getTree());
+            treeWalk.setFilter(AndTreeFilter.create(IndexDiffFilter.ANY_DIFF, PathSuffixFilter.create(".java")));
             treeWalk.setRecursive(true);
             while (treeWalk.next()) {
                 changes.add(new AddChange(System.currentTimeMillis(),

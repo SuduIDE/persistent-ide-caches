@@ -56,4 +56,8 @@ public record Trigram(byte[] trigram) implements Comparable<Trigram> {
     public String toString() {
         return "Trigram" + Arrays.toString(trigram);
     }
+
+    public String toPrettyString() {
+        return " " + (char) trigram[0] + (char) trigram[1] + (char) trigram[2];
+    }
 }
