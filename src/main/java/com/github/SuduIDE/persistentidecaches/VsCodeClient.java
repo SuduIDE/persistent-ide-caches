@@ -20,6 +20,7 @@ public class VsCodeClient {
     public static final String CHANGES = "changes";
     public static final int BUSY_WAITING_MILLIS = 500;
     private static final char[] BUFFER = new char[16384];
+    public static final String CHECKOUT = "checkout";
 
     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
     public static void main(final String[] args) throws IOException, InterruptedException {
@@ -31,53 +32,62 @@ public class VsCodeClient {
             final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
             final var repPath = Path.of(args[0]);
             manager.parseGitRepository(repPath);
-            manager.getFileCache().forEach((it, iti) -> System.err.println(it + " " + iti));
 
             final ObjectMapper objectMapper = new ObjectMapper();
             final BufferedReader scanner = new BufferedReader(new InputStreamReader(System.in));
             while (true) {
                 String line = scanner.readLine();
                 Thread.sleep(BUSY_WAITING_MILLIS);
-                if (line.equals(CHANGES)) {
-                    final var read = scanner.read(BUFFER);
-                    line = new String(BUFFER, 0, read);
-                    final Changes changes = objectMapper.readValue(line, Changes.class);
-                    final List<Change> processedChangesList = new ArrayList<>();
-                    for (final ModifyChangeFromJSON modifyChangeFromJSON : changes.modifyChanges) {
-                        final Path path = repPath.relativize(Path.of(modifyChangeFromJSON.uri));
-                        final ModifyChange modifyChange = new ModifyChange(changes.timestamp,
-                                () -> modifyChangeFromJSON.oldText,
-                                () -> modifyChangeFromJSON.newText,
-                                path,
-                                path);
-                        processedChangesList.add(modifyChange);
+                switch (line) {
+                    case CHANGES -> {
+                        final var read = scanner.read(BUFFER);
+                        line = new String(BUFFER, 0, read);
+                        final Changes changes = objectMapper.readValue(line, Changes.class);
+                        final List<Change> processedChangesList = new ArrayList<>();
+                        for (final ModifyChangeFromJSON modifyChangeFromJSON : changes.modifyChanges) {
+                            final Path path = repPath.relativize(Path.of(modifyChangeFromJSON.uri));
+                            final ModifyChange modifyChange = new ModifyChange(changes.timestamp,
+                                    () -> modifyChangeFromJSON.oldText,
+                                    () -> modifyChangeFromJSON.newText,
+                                    path,
+                                    path);
+                            processedChangesList.add(modifyChange);
+                        }
+                        for (final CreateFileChangeFromJSON createFileChangeFromJSON : changes.addChanges) {
+                            final AddChange addChange = new AddChange(changes.timestamp,
+                                    new FilePointer(repPath.relativize(Path.of(createFileChangeFromJSON.uri)), 0),
+                                    createFileChangeFromJSON.text);
+                            processedChangesList.add(addChange);
+                        }
+                        for (final DeleteFileChangeFromJSON deleteFileChangeFromJSON : changes.deleteChanges) {
+                            final DeleteChange deleteChange = new DeleteChange(changes.timestamp,
+                                    new FilePointer(repPath.relativize(Path.of(deleteFileChangeFromJSON.uri)), 0),
+                                    deleteFileChangeFromJSON.text);
+                            processedChangesList.add(deleteChange);
+                        }
+                        for (final RenameFileChangeFromJSON renameFileChangeFromJSON : changes.renameChanges) {
+                            final RenameChange renameChange = new RenameChange(changes.timestamp,
+                                    () -> renameFileChangeFromJSON.text,
+                                    () -> renameFileChangeFromJSON.text,
+                                    repPath.relativize(Path.of(renameFileChangeFromJSON.oldUri)),
+                                    repPath.relativize(Path.of(renameFileChangeFromJSON.newUri)));
+                            processedChangesList.add(renameChange);
+                        }
+                        manager.nextRevision();
+                        manager.applyChanges(processedChangesList);
                     }
-                    for (final CreateFileChangeFromJSON createFileChangeFromJSON : changes.addChanges) {
-                        final AddChange addChange = new AddChange(changes.timestamp,
-                                new FilePointer(repPath.relativize(Path.of(createFileChangeFromJSON.uri)), 0),
-                                createFileChangeFromJSON.text);
-                        processedChangesList.add(addChange);
+                    case SEARCH -> {
+                        final var read = scanner.read(BUFFER);
+                        line = new String(BUFFER, 0, read);
+                        System.out.println(trigramIndexUtils.filesForString(line));
                     }
-                    for (final DeleteFileChangeFromJSON deleteFileChangeFromJSON : changes.deleteChanges) {
-                        final DeleteChange deleteChange = new DeleteChange(changes.timestamp,
-                                new FilePointer(repPath.relativize(Path.of(deleteFileChangeFromJSON.uri)), 0),
-                                deleteFileChangeFromJSON.text);
-                        processedChangesList.add(deleteChange);
+                    case CHECKOUT -> {
+                        final var read = scanner.read(BUFFER);
+                        line = new String(BUFFER, 0, read);
+                        manager.checkoutToGitRevision(line);
+                        System.out.println("Checkouted to " + line + ". Current revision " +
+                                manager.getRevisions().getCurrentRevision().revision());
                     }
-                    for (final RenameFileChangeFromJSON renameFileChangeFromJSON : changes.renameChanges) {
-                        final RenameChange renameChange = new RenameChange(changes.timestamp,
-                                () -> renameFileChangeFromJSON.text,
-                                () -> renameFileChangeFromJSON.text,
-                                repPath.relativize(Path.of(renameFileChangeFromJSON.oldUri)),
-                                repPath.relativize(Path.of(renameFileChangeFromJSON.newUri)));
-                        processedChangesList.add(renameChange);
-                    }
-                    manager.nextRevision();
-                    manager.applyChanges(processedChangesList);
-                } else if (line.equals(SEARCH)) {
-                    final var read = scanner.read(BUFFER);
-                    line = new String(BUFFER, 0, read);
-                    System.out.println(trigramIndexUtils.filesForString(line));
                 }
             }
         }
