@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -105,13 +106,13 @@ public class CamelCaseIndex implements Index<String, String> {
     @Override
     public void processChanges(final List<? extends Change> changes) {
         changes.forEach(change -> {
-                    switch (change) {
-                        case final ModifyChange modifyChange -> processModifyChange(modifyChange);
-                        case final AddChange addChange -> processAddChange(addChange);
-                        case final DeleteChange deleteChange -> processDeleteChange(deleteChange);
-                        default -> {
-                        }
-                    }
+            if (Objects.requireNonNull(change) instanceof final ModifyChange modifyChange) {
+                processModifyChange(modifyChange);
+            } else if (change instanceof final AddChange addChange) {
+                processAddChange(addChange);
+            } else if (change instanceof final DeleteChange deleteChange) {
+                processDeleteChange(deleteChange);
+            }
                 }
         );
     }

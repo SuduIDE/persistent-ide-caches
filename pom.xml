@@ -9,9 +9,9 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <compilerArgs>--enable-preview</compilerArgs>
           <source>19</source>
           <target>19</target>
+          <compilerArgs>--enable-preview</compilerArgs>
         </configuration>
         <groupId>org.apache.maven.plugins</groupId>
       </plugin>

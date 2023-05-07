@@ -17,6 +17,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.eclipse.jgit.api.Git;
@@ -124,13 +125,11 @@ public class GitParser {
 
     void sendChanges(final List<Change> changes, final RevCommit commit) {
         changes.forEach(it -> {
-            switch (it) {
-                case final FileChange fileChange ->
-                        indexesManager.getFileCache().tryRegisterNewObj(fileChange.getPlace().file());
-                case final FileHolderChange fileHolderChange -> {
-                    indexesManager.getFileCache().tryRegisterNewObj(fileHolderChange.getOldFileName());
-                    indexesManager.getFileCache().tryRegisterNewObj(fileHolderChange.getNewFileName());
-                }
+            if (Objects.requireNonNull(it) instanceof final FileChange fileChange) {
+                indexesManager.getFileCache().tryRegisterNewObj(fileChange.getPlace().file());
+            } else if (it instanceof final FileHolderChange fileHolderChange) {
+                indexesManager.getFileCache().tryRegisterNewObj(fileHolderChange.getOldFileName());
+                indexesManager.getFileCache().tryRegisterNewObj(fileHolderChange.getNewFileName());
             }
         });
         final int rev = gitCommits2Revisions.get(commit.getName());

@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.lmdbjava.Env;
@@ -119,21 +120,18 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     }
 
     private void countChange(final Change change, final TrigramFileCounter delta) {
-        switch (change) {
-            case final AddChange addChange ->
-                    delta.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));
-            case final ModifyChange modifyChange -> {
-                delta.decrease(modifyChange.getOldFileName(), getTrigramsCount(modifyChange.getOldFileContent()));
-                delta.add(modifyChange.getNewFileName(), getTrigramsCount(modifyChange.getNewFileContent()));
-            }
-            case final CopyChange copyChange ->
-                    delta.add(copyChange.getNewFileName(), getTrigramsCount(copyChange.getNewFileContent()));
-            case final RenameChange renameChange -> {
-                delta.decrease(renameChange.getOldFileName(), getTrigramsCount(renameChange.getOldFileContent()));
-                delta.add(renameChange.getNewFileName(), getTrigramsCount(renameChange.getNewFileContent()));
-            }
-            case final DeleteChange deleteChange ->
-                    delta.add(deleteChange.getPlace().file(), getTrigramsCount(deleteChange.getDeletedString()));
+        if (Objects.requireNonNull(change) instanceof final AddChange addChange) {
+            delta.add(addChange.getPlace().file(), getTrigramsCount(addChange.getAddedString()));
+        } else if (change instanceof final ModifyChange modifyChange) {
+            delta.decrease(modifyChange.getOldFileName(), getTrigramsCount(modifyChange.getOldFileContent()));
+            delta.add(modifyChange.getNewFileName(), getTrigramsCount(modifyChange.getNewFileContent()));
+        } else if (change instanceof final CopyChange copyChange) {
+            delta.add(copyChange.getNewFileName(), getTrigramsCount(copyChange.getNewFileContent()));
+        } else if (change instanceof final RenameChange renameChange) {
+            delta.decrease(renameChange.getOldFileName(), getTrigramsCount(renameChange.getOldFileContent()));
+            delta.add(renameChange.getNewFileName(), getTrigramsCount(renameChange.getNewFileContent()));
+        } else if (change instanceof final DeleteChange deleteChange) {
+            delta.add(deleteChange.getPlace().file(), getTrigramsCount(deleteChange.getDeletedString()));
         }
     }
 

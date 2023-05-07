@@ -7,25 +7,25 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 
 public class DummyCountingCache<V> implements CountingCache<V> {
-    public final AtomicInteger fileCounter = new AtomicInteger();
-    public final Map<Integer, V> filesInProject = new HashMap<>();
-    public final Map<V, Integer> reverseFilesInProject = new HashMap<>();
+    public final AtomicInteger counter = new AtomicInteger();
+    public final Map<Integer, V> numToObj = new HashMap<>();
+    public final Map<V, Integer> objToNum = new HashMap<>();
 
     @Override
     public int getNumber(final V obj) {
-        return reverseFilesInProject.get(obj);
+        return objToNum.get(obj);
     }
 
     @Override
     public V getObject(final int objNum) {
-        return filesInProject.get(objNum);
+        return numToObj.get(objNum);
     }
 
     @Override
     public void tryRegisterNewObj(final V obj) {
-        if (reverseFilesInProject.get(obj) == null) {
-            filesInProject.put(fileCounter.get(), obj);
-            reverseFilesInProject.put(obj, fileCounter.getAndIncrement());
+        if (objToNum.get(obj) == null) {
+            numToObj.put(counter.get(), obj);
+            objToNum.put(obj, counter.getAndIncrement());
         }
     }
 
@@ -41,6 +41,6 @@ public class DummyCountingCache<V> implements CountingCache<V> {
 
     @Override
     public void forEach(final BiConsumer<V, Number> consumer) {
-        reverseFilesInProject.forEach(consumer);
+        objToNum.forEach(consumer);
     }
 }
