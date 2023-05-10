@@ -1,4 +1,4 @@
-package com.github.SuduIDE.persistentidecaches.utils;
+package com.github.SuduIDE.persistentidecaches.utils.indexes;
 
 import com.github.SuduIDE.persistentidecaches.Index;
 import com.github.SuduIDE.persistentidecaches.changes.Change;

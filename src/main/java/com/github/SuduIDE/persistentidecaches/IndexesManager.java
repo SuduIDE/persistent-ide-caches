@@ -1,5 +1,6 @@
 package com.github.SuduIDE.persistentidecaches;
 
+
 import com.github.SuduIDE.persistentidecaches.ccsearch.CamelCaseIndex;
 import com.github.SuduIDE.persistentidecaches.changes.Change;
 import com.github.SuduIDE.persistentidecaches.lmdb.CountingCacheImpl;
@@ -11,8 +12,9 @@ import com.github.SuduIDE.persistentidecaches.lmdb.maps.LmdbString2Int;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
 import com.github.SuduIDE.persistentidecaches.symbols.Symbol;
 import com.github.SuduIDE.persistentidecaches.trigram.TrigramIndex;
-import com.github.SuduIDE.persistentidecaches.utils.EchoIndex;
 import com.github.SuduIDE.persistentidecaches.utils.FileUtils;
+import com.github.SuduIDE.persistentidecaches.utils.indexes.EchoIndex;
+import com.github.SuduIDE.persistentidecaches.utils.indexes.SizeCounterIndex;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.FileVisitResult;
@@ -138,6 +140,12 @@ public class IndexesManager implements AutoCloseable {
         final EchoIndex echoIndex = new EchoIndex();
         indexes.put(EchoIndex.class, echoIndex);
         return echoIndex;
+    }
+
+    public SizeCounterIndex addSizeCounterIndex() {
+        final var sizeCounterIndex = new SizeCounterIndex();
+        indexes.put(SizeCounterIndex.class, sizeCounterIndex);
+        return sizeCounterIndex;
     }
 
     public TrigramIndex addTrigramIndex() {
