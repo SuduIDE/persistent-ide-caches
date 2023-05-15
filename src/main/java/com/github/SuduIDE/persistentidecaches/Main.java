@@ -19,8 +19,8 @@ public class Main {
         try (final IndexesManager manager = new IndexesManager(true)) {
 //            final var trigramHistoryIndex = manager.addTrigramIndex();
 //            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
-//            final var camelCaseIndex = manager.addCamelCaseIndex();
-//            final var camelCaseIndexUtils = camelCaseIndex.getUtils();
+            final var camelCaseIndex = manager.addCamelCaseIndex();
+            final var camelCaseIndexUtils = camelCaseIndex.getUtils();
 //            final int LIMIT = 10;
             final var sizeCounterIndex = manager.addSizeCounterIndex();
             final int LIMIT = Integer.MAX_VALUE;
@@ -30,9 +30,9 @@ public class Main {
 //            Map<Symbol, Integer> symbols = new TreeMap<>();
 //            camelCaseIndex.getClassCounter().forEach((trigram, symbol, integer) -> System.out.println(trigram.toPrettyString() + " " + symbol + " " + integer));
 //            symbols.forEach((symbol, integer) -> System.out.println(symbol + " " + integer));
-//            camelCaseIndexUtils.getSymbolsFromClasses("ArrSe").forEach(System.out::println);
-//            camelCaseIndexUtils.getSymbolsFromClasses("Impl").forEach(System.out::println);
-//            camelCaseIndexUtils.getSymbolsFromClasses("HFVis").forEach(System.out::println);
+            camelCaseIndexUtils.getSymbolsFromClasses("ArrSe").forEach(System.out::println);
+            camelCaseIndexUtils.getSymbolsFromClasses("Impl").forEach(System.out::println);
+            camelCaseIndexUtils.getSymbolsFromClasses("HFVis").forEach(System.out::println);
 //            System.out.println("Current revision: " + manager.getRevisions().getCurrentRevision());
 ////            trigramHistoryIndex.getCounter().forEach((tri, file, i) -> System.out.println(tri + " " + file + " " + i));
 //            benchmark(() -> manager.checkoutToGitRevision("a12b6970620c5b83df8d786630e9372c8f56daba"));

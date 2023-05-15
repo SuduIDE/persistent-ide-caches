@@ -2,9 +2,11 @@ package com.github.SuduIDE.persistentidecaches.ccsearch;
 
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import com.github.SuduIDE.persistentidecaches.symbols.Symbol;
+import java.util.Comparator;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeSet;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class CamelCaseIndexUtils {
 
@@ -37,7 +39,11 @@ public class CamelCaseIndexUtils {
         final var fileSet = new TreeSet<>(symbolsForTrigramInCounter(trigramSet.first(), counter));
         trigramSet.pollFirst();
         trigramSet.forEach(it -> fileSet.retainAll(symbolsForTrigramInCounter(trigramSet.first(), counter)));
-        return fileSet.stream().toList();
+        return fileSet.stream()
+                .map(it -> Pair.of(it, Matcher.match(request, it.name())))
+                .sorted(Comparator.comparing((Pair<Symbol, Integer> pair) -> pair.getRight()).reversed())
+                .map(Pair::getLeft)
+                .toList();
     }
 
     public List<Symbol> getSymbolsFromClasses(
