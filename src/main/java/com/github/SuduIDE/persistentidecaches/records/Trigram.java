@@ -60,4 +60,12 @@ public record Trigram(byte[] trigram) implements Comparable<Trigram> {
     public String toPrettyString() {
         return " " + (char) trigram[0] + (char) trigram[1] + (char) trigram[2];
     }
+
+    public Trigram toLowerCase() {
+        return new Trigram(new byte[]{
+                (byte) Character.toLowerCase(trigram[0]),
+                (byte) Character.toLowerCase(trigram[1]),
+                (byte) Character.toLowerCase(trigram[2])
+        });
+    }
 }

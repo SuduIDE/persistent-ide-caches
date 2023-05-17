@@ -131,7 +131,9 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
             delta.decrease(renameChange.getOldFileName(), getTrigramsCount(renameChange.getOldFileContent()));
             delta.add(renameChange.getNewFileName(), getTrigramsCount(renameChange.getNewFileContent()));
         } else if (change instanceof final DeleteChange deleteChange) {
-            delta.add(deleteChange.getPlace().file(), getTrigramsCount(deleteChange.getDeletedString()));
+            delta.decrease(deleteChange.getPlace().file(), getTrigramsCount(deleteChange.getDeletedString()));
+        } else {
+            throw new AssertionError();
         }
     }
 

@@ -2,10 +2,12 @@ package com.github.SuduIDE.persistentidecaches.ccsearch;
 
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import com.github.SuduIDE.persistentidecaches.symbols.Symbol;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NavigableSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class CamelCaseIndexUtils {
@@ -26,19 +28,23 @@ public class CamelCaseIndexUtils {
         return trigramSet;
     }
 
-    private List<Symbol> symbolsForTrigramInCounter(final Trigram trigram,
-            final TrigramSymbolCounterLmdb counter) {
-//        return counter.subMap(new TrigramSymbol(trigram, Symbol.MIN), new TrigramSymbol(trigram, Symbol.MAX)).keySet()
-//                .stream().map(TrigramSymbol::word).collect(Collectors.toSet());
-        return counter.getObjForTrigram(trigram);
+    private List<Symbol> symbolsForTrigramInCounters(final Trigram trigram,
+            final List<TrigramSymbolCounterLmdb> counters) {
+        return counters.stream()
+                .map(counter -> counter.getObjForTrigram(trigram))
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 
     public List<Symbol> getSymbols(final String request,
-            final TrigramSymbolCounterLmdb counter) {
-        final var trigramSet = getTrigramsSet(request);
-        final var fileSet = new TreeSet<>(symbolsForTrigramInCounter(trigramSet.first(), counter));
+            final List<TrigramSymbolCounterLmdb> counters) {
+        final var trigramSet = getTrigramsSet(request.toLowerCase());
+        if (trigramSet.isEmpty()) {
+            return List.of();
+        }
+        final var fileSet = new TreeSet<>(symbolsForTrigramInCounters(trigramSet.first(), counters));
         trigramSet.pollFirst();
-        trigramSet.forEach(it -> fileSet.retainAll(symbolsForTrigramInCounter(trigramSet.first(), counter)));
+        trigramSet.forEach(it -> fileSet.retainAll(symbolsForTrigramInCounters(it, counters)));
         return fileSet.stream()
                 .map(it -> Pair.of(it, Matcher.match(request, it.name())))
                 .sorted(Comparator.comparing((Pair<Symbol, Integer> pair) -> pair.getRight()).reversed())
@@ -49,7 +55,16 @@ public class CamelCaseIndexUtils {
     public List<Symbol> getSymbolsFromClasses(
             final String request
     ) {
-        return getSymbols(request, camelCaseIndex.getClassCounter());
+        return getSymbols(request, List.of(camelCaseIndex.getClassCounter()));
+    }
+
+    public List<Symbol> getSymbolsFromAny(final String request) {
+
+        return getSymbols(request, List.of(
+                camelCaseIndex.getClassCounter(),
+                camelCaseIndex.getMethodCounter(),
+                camelCaseIndex.getFieldCounter()
+        ));
     }
 
 }

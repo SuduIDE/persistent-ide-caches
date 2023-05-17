@@ -98,6 +98,7 @@ public class CamelCaseIndex implements Index<String, String> {
     private static Map<TrigramSymbol, Integer> collectCounter(final List<String> symbols, final int fileNum) {
         return symbols.stream()
                 .map(it -> Pair.of(it, getInterestTrigrams(it)))
+                .map(it -> Pair.of(it.getLeft(), it.getRight().stream().map(Trigram::toLowerCase).toList()))
                 .flatMap(pair -> pair.getValue().stream()
                         .map(trigram -> new TrigramSymbol(trigram, new Symbol(pair.getKey(), fileNum))))
                 .collect(Collectors.groupingBy(it -> it, Collectors.summingInt(e -> 1)));
@@ -106,13 +107,13 @@ public class CamelCaseIndex implements Index<String, String> {
     @Override
     public void processChanges(final List<? extends Change> changes) {
         changes.forEach(change -> {
-            if (Objects.requireNonNull(change) instanceof final ModifyChange modifyChange) {
-                processModifyChange(modifyChange);
-            } else if (change instanceof final AddChange addChange) {
-                processAddChange(addChange);
-            } else if (change instanceof final DeleteChange deleteChange) {
-                processDeleteChange(deleteChange);
-            }
+                    if (Objects.requireNonNull(change) instanceof final ModifyChange modifyChange) {
+                        processModifyChange(modifyChange);
+                    } else if (change instanceof final AddChange addChange) {
+                        processAddChange(addChange);
+                    } else if (change instanceof final DeleteChange deleteChange) {
+                        processDeleteChange(deleteChange);
+                    }
                 }
         );
     }

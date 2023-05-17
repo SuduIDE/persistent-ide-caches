@@ -73,6 +73,11 @@ public class GitParser {
         parseOne(repository.resolve(Constants.HEAD));
     }
 
+    public String getHead() throws IOException {
+        try (final RevWalk walk = new RevWalk(repository)) {
+            return walk.parseCommit(repository.resolve(Constants.HEAD)).getName();
+        }
+    }
     private void parseOne(final ObjectId head) {
         LOG.info("Parsing ref: " + head.getName());
         try (final RevWalk walk = new RevWalk(repository)) {
@@ -191,7 +196,8 @@ public class GitParser {
                             Path.of(diffEntry.getNewPath())
                     ));
             case DELETE -> List.of(
-                    new DeleteChange(System.currentTimeMillis(), new FilePointer(Path.of(diffEntry.getOldPath()), 0),
+                    new DeleteChange(System.currentTimeMillis(),
+                            new FilePointer(Path.of(diffEntry.getOldPath()), 0),
                             new String(repository.open(diffEntry.getOldId().toObjectId()).getBytes())));
             case RENAME -> List.of(
                     new RenameChange(System.currentTimeMillis(),

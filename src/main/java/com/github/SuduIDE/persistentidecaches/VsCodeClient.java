@@ -13,23 +13,27 @@ import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class VsCodeClient {
 
     public static final String SEARCH = "search";
     public static final String CHANGES = "changes";
     public static final int BUSY_WAITING_MILLIS = 500;
-    private static final char[] BUFFER = new char[16384];
     public static final String CHECKOUT = "checkout";
+    public static final String CCSEARCH = "ccsearch";
+    private static final char[] BUFFER = new char[16384];
 
     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
     public static void main(final String[] args) throws IOException, InterruptedException {
         if (args.length < 1) {
-            throw new RuntimeException("Needs path to repository as first arg");
+            System.err.println("Needs path to repository as first arg");
         }
-        try (final IndexesManager manager = new IndexesManager(true)) {
+        try (final IndexesManager manager = new IndexesManager(args.length <= 1)) {
             final var trigramHistoryIndex = manager.addTrigramIndex();
             final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
+            final var camelCaseSearch = manager.addCamelCaseIndex();
+            final var camelCaseSearchUtils = camelCaseSearch.getUtils();
             final var repPath = Path.of(args[0]);
             manager.parseGitRepository(repPath);
 
@@ -79,7 +83,10 @@ public class VsCodeClient {
                     case SEARCH -> {
                         final var read = scanner.read(BUFFER);
                         line = new String(BUFFER, 0, read);
-                        System.out.println(trigramIndexUtils.filesForString(line));
+                        System.out.println(trigramIndexUtils.filesForString(line)
+                                .stream()
+                                .map(Path::toString)
+                                .collect(Collectors.joining("\n")));
                     }
                     case CHECKOUT -> {
                         final var read = scanner.read(BUFFER);
@@ -87,6 +94,15 @@ public class VsCodeClient {
                         manager.checkoutToGitRevision(line);
                         System.out.println("Checkouted to " + line + ". Current revision " +
                                 manager.getRevisions().getCurrentRevision().revision());
+                    }
+                    case CCSEARCH -> {
+                        final var read = scanner.read(BUFFER);
+                        line = new String(BUFFER, 0, read);
+                        System.out.println(
+                                camelCaseSearchUtils.getSymbolsFromAny(line).stream()
+                                        .map(it -> it.name() + " " +
+                                                manager.getFileCache().getObject(it.pathNum()).getFileName().toString())
+                                        .collect(Collectors.joining("\n")));
                     }
                 }
             }

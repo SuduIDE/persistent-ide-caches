@@ -183,6 +183,7 @@ public class IndexesManager implements AutoCloseable {
                     lmdbSha12Int,
                     LIMIT);
             parser.parseHead();
+            checkoutToGitRevision(parser.getHead());
         } catch (final IOException ioException) {
             throw new RuntimeException(ioException);
         }
