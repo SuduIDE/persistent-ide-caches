@@ -19,8 +19,8 @@ public class Main {
             throw new RuntimeException("Needs path to repository as first arg");
         }
         try (final IndexesManager manager = new IndexesManager(true)) {
-            final var trigramHistoryIndex = manager.addTrigramIndex();
-            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
+//            final var trigramHistoryIndex = manager.addTrigramIndex();
+//            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
             final var camelCaseIndex = manager.addCamelCaseIndex();
             final var camelCaseIndexUtils = camelCaseIndex.getUtils();
 //            final int LIMIT = 10;
@@ -43,12 +43,12 @@ public class Main {
 //            trigramIndexUtils.filesForString("ArraySet").forEach(System.out::println);
 //          спецэффект camelCaseIndexUtils.getSymbolsFromAny("create") -> LocalRemoteThreadsTest
 //          спецэффект camelCaseIndexUtils.getSymbolsFromAny("crea") -> streamMapReduceReduce
-            System.out.println(SEPARATOR);
-            camelCaseIndexUtils.getSymbolsFromAny("ArrSe").forEach(System.out::println);
-            System.out.println(SEPARATOR);
-            camelCaseIndexUtils.getSymbolsFromAny("Impl").forEach(System.out::println);
-            System.out.println(SEPARATOR);
-            camelCaseIndexUtils.getSymbolsFromAny("HFVis").forEach(System.out::println);
+//            System.out.println(SEPARATOR);
+//            camelCaseIndexUtils.getSymbolsFromAny("ArrSe").forEach(System.out::println);
+//            System.out.println(SEPARATOR);
+//            camelCaseIndexUtils.getSymbolsFromAny("Impl").forEach(System.out::println);
+//            System.out.println(SEPARATOR);
+//            camelCaseIndexUtils.getSymbolsFromAny("HFVis").forEach(System.out::println);
 //            System.out.println("Current revision: " + manager.getRevisions().getCurrentRevision());
 ////            trigramHistoryIndex.getCounter().forEach((tri, file, i) -> System.out.println(tri + " " + file + " " + i));
 //            benchmark(() -> manager.checkoutToGitRevision("a12b6970620c5b83df8d786630e9372c8f56daba"));

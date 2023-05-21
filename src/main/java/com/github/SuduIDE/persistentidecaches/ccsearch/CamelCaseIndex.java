@@ -1,11 +1,13 @@
 package com.github.SuduIDE.persistentidecaches.ccsearch;
 
 import com.github.SuduIDE.persistentidecaches.Index;
+import com.github.SuduIDE.persistentidecaches.IndexesManager;
 import com.github.SuduIDE.persistentidecaches.changes.AddChange;
 import com.github.SuduIDE.persistentidecaches.changes.Change;
 import com.github.SuduIDE.persistentidecaches.changes.DeleteChange;
 import com.github.SuduIDE.persistentidecaches.changes.ModifyChange;
 import com.github.SuduIDE.persistentidecaches.lmdb.CountingCacheImpl;
+import com.github.SuduIDE.persistentidecaches.lmdb.LmdbRevisionFile2ListString;
 import com.github.SuduIDE.persistentidecaches.records.FilePointer;
 import com.github.SuduIDE.persistentidecaches.records.Revision;
 import com.github.SuduIDE.persistentidecaches.records.Trigram;
@@ -18,6 +20,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,23 +30,37 @@ import org.lmdbjava.Env;
 public class CamelCaseIndex implements Index<String, String> {
 
     public static final Pattern CAMEL_CASE_PATTERN = Pattern.compile("[A-Za-z][a-z0-9]*([A-Z][a-z0-9]*)*");
+    private final IndexesManager manager;
     private final CountingCacheImpl<Symbol> symbolCache;
     private final CountingCacheImpl<Path> pathCache;
     private final TrigramSymbolCounterLmdb classCounter;
     private final TrigramSymbolCounterLmdb fieldCounter;
     private final TrigramSymbolCounterLmdb methodCounter;
+    private final LmdbRevisionFile2ListString classCache;
+    private final LmdbRevisionFile2ListString fieldCache;
+    private final LmdbRevisionFile2ListString methodCache;
 
-    public CamelCaseIndex(final Env<ByteBuffer> env, final CountingCacheImpl<Symbol> symbolCache,
-            final CountingCacheImpl<Path> pathCache) {
+    public CamelCaseIndex(final IndexesManager manager, final Env<ByteBuffer> env,
+            final CountingCacheImpl<Symbol> symbolCache,
+            final CountingCacheImpl<Path> pathCache, final Env<ByteBuffer> cacheEnv) {
+        this.manager = manager;
         this.symbolCache = symbolCache;
         this.pathCache = pathCache;
         methodCounter = new TrigramSymbolCounterLmdb(env, symbolCache, "method");
         fieldCounter = new TrigramSymbolCounterLmdb(env, symbolCache, "field");
         classCounter = new TrigramSymbolCounterLmdb(env, symbolCache, "class");
+        methodCache = new LmdbRevisionFile2ListString(cacheEnv, "method_parse_cache");
+        fieldCache = new LmdbRevisionFile2ListString(cacheEnv, "field_parse_cache");
+        classCache = new LmdbRevisionFile2ListString(cacheEnv, "class_parse_cache");
     }
 
     public static Symbols getSymbolsFromString(final String javaFile) {
-        return JavaSymbolListener.getSymbolsFromString(javaFile);
+        final var symbols = JavaSymbolListener.getSymbolsFromString(javaFile);
+        return new Symbols(
+                symbols.classOrInterfaceSymbols().stream().filter(CamelCaseIndex::isCamelCase).toList(),
+                symbols.fieldSymbols().stream().filter(CamelCaseIndex::isCamelCase).toList(),
+                symbols.methodSymbols().stream().filter(CamelCaseIndex::isCamelCase).toList()
+        );
     }
 
     static boolean isCamelCase(final String name) {
@@ -99,9 +116,25 @@ public class CamelCaseIndex implements Index<String, String> {
         return symbols.stream()
                 .map(it -> Pair.of(it, getInterestTrigrams(it)))
                 .map(it -> Pair.of(it.getLeft(), it.getRight().stream().map(Trigram::toLowerCase).toList()))
+                .map(it -> Pair.of(new Symbol(it.getKey(), fileNum), it.getRight()))
                 .flatMap(pair -> pair.getValue().stream()
-                        .map(trigram -> new TrigramSymbol(trigram, new Symbol(pair.getKey(), fileNum))))
+                        .map(trigram -> new TrigramSymbol(trigram, pair.getKey())))
                 .collect(Collectors.groupingBy(it -> it, Collectors.summingInt(e -> 1)));
+    }
+
+    public Symbols getSymbolsFromStringWithCache(final Supplier<String> javaFile, final int pathNum, final int revision) {
+        final List<String> classCached = classCache.get(revision, pathNum);
+        if (classCached != null) {
+            final List<String> methodCached = methodCache.get(revision, pathNum);
+            final List<String> fieldCached = fieldCache.get(revision, pathNum);
+            return new Symbols(classCached, fieldCached, methodCached);
+        } else {
+            final Symbols symbols = getSymbolsFromString(javaFile.get());
+            classCache.put(revision, pathNum, symbols.classOrInterfaceSymbols());
+            methodCache.put(revision, pathNum, symbols.methodSymbols());
+            fieldCache.put(revision, pathNum, symbols.fieldSymbols());
+            return symbols;
+        }
     }
 
     @Override
@@ -110,9 +143,9 @@ public class CamelCaseIndex implements Index<String, String> {
                     if (Objects.requireNonNull(change) instanceof final ModifyChange modifyChange) {
                         processModifyChange(modifyChange);
                     } else if (change instanceof final AddChange addChange) {
-                        processAddChange(addChange);
+                        processAddChange(addChange.getPlace().file(), addChange::getAddedString);
                     } else if (change instanceof final DeleteChange deleteChange) {
-                        processDeleteChange(deleteChange);
+                        processDeleteChange(deleteChange.getPlace().file(), deleteChange::getDeletedString);
                     }
                 }
         );
@@ -125,19 +158,29 @@ public class CamelCaseIndex implements Index<String, String> {
 
     private void processModifyChange(final ModifyChange modifyChange) {
         processDeleteChange(
-                new DeleteChange(modifyChange.getTimestamp(),
-                        new FilePointer(modifyChange.getOldFileName(), 0),
-                        modifyChange.getOldFileContent())
+                modifyChange.getOldFileName(), modifyChange.getOldFileGetter()
         );
         processAddChange(
-                new AddChange(modifyChange.getTimestamp(),
-                        new FilePointer(modifyChange.getNewFileName(), 0),
-                        modifyChange.getNewFileContent()));
+                modifyChange.getNewFileName(), modifyChange.getNewFileGetter()
+        );
     }
 
-    private void processDeleteChange(final DeleteChange change) {
-        final var symbolsFile = getSymbolsFromString(change.getDeletedString());
-        final var fileNum = pathCache.getNumber(change.getPlace().file());
+    private void processAddChange(final Path newFileName, final Supplier<String> newFileContent) {
+        final var fileNum = pathCache.getNumber(newFileName);
+        final var symbolsFile = getSymbolsFromStringWithCache(newFileContent, fileNum,
+                manager.getRevisions().getCurrentRevision().revision());
+        symbolsFile.concatedStream().forEach(it -> symbolCache.tryRegisterNewObj(
+                new Symbol(it, pathCache.getNumber(newFileName))));
+        classCounter.add(collectCounter(symbolsFile.classOrInterfaceSymbols(), fileNum));
+        fieldCounter.add(collectCounter(symbolsFile.fieldSymbols(), fileNum));
+        methodCounter.add(collectCounter(symbolsFile.methodSymbols(), fileNum));
+//        print(change.getPlace());
+    }
+
+    private void processDeleteChange(final Path oldFilePath, final Supplier<String> oldFileContent) {
+        final var fileNum = pathCache.getNumber(oldFilePath);
+        final var symbolsFile = getSymbolsFromStringWithCache(oldFileContent, fileNum,
+                -manager.getRevisions().getCurrentRevision().revision());
         classCounter.decrease(collectCounter(symbolsFile.classOrInterfaceSymbols(), fileNum));
         fieldCounter.decrease(collectCounter(symbolsFile.fieldSymbols(), fileNum));
         methodCounter.decrease(collectCounter(symbolsFile.methodSymbols(), fileNum));
@@ -153,17 +196,6 @@ public class CamelCaseIndex implements Index<String, String> {
     @Override
     public String getValue(final String s, final Revision revision) {
         return null;
-    }
-
-    private void processAddChange(final AddChange change) {
-        final var symbolsFile = getSymbolsFromString(change.getAddedString());
-        final var fileNum = pathCache.getNumber(change.getPlace().file());
-        symbolsFile.concatedStream().forEach(it -> symbolCache.tryRegisterNewObj(
-                new Symbol(it, pathCache.getNumber(change.getPlace().file()))));
-        classCounter.add(collectCounter(symbolsFile.classOrInterfaceSymbols(), fileNum));
-        fieldCounter.add(collectCounter(symbolsFile.fieldSymbols(), fileNum));
-        methodCounter.add(collectCounter(symbolsFile.methodSymbols(), fileNum));
-//        print(change.getPlace());
     }
 
 

@@ -45,6 +45,7 @@ public class IndexesManager implements AutoCloseable {
         }
     };
 
+    private final Path lmdbCachePath;
     private final Path lmdbGlobalPath;
     private final Path lmdbTrigramPath;
     private final Path lmdbCamelCaseSearchPath;
@@ -69,6 +70,7 @@ public class IndexesManager implements AutoCloseable {
     public IndexesManager(final boolean resetDBs, final Path dataPath) {
         indexes = new HashMap<>();
         envs = new ArrayList<>();
+        lmdbCachePath = dataPath.resolve(".lmdb.cache");
         lmdbGlobalPath = dataPath.resolve(".lmdb");
         lmdbTrigramPath = dataPath.resolve(".lmdb.trigrams");
         lmdbCamelCaseSearchPath = dataPath.resolve(".lmdb.camelCaseSearch");
@@ -83,18 +85,20 @@ public class IndexesManager implements AutoCloseable {
                 if (Files.exists(lmdbCamelCaseSearchPath)) {
                     Files.walkFileTree(lmdbCamelCaseSearchPath, DELETE);
                 }
+//                if (Files.exists(lmdbCachePath)) {
+//                    Files.walkFileTree(lmdbCachePath, DELETE);
+//                }
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
         }
-        FileUtils.createParentDirectories(lmdbTrigramPath, lmdbGlobalPath, lmdbCamelCaseSearchPath);
+        FileUtils.createParentDirectories(lmdbTrigramPath, lmdbGlobalPath, lmdbCamelCaseSearchPath, lmdbCachePath);
 
         globalEnv = initGlobalEnv();
         variables = initVariables(globalEnv);
         revisions = initRevisions(globalEnv, variables);
         pathCache = initFileCache(globalEnv, variables);
         symbolCache = initSymbolCache(globalEnv, variables);
-
     }
 
 
@@ -163,11 +167,17 @@ public class IndexesManager implements AutoCloseable {
     public CamelCaseIndex addCamelCaseIndex() {
         final var camelCaseEnv = Env.create()
                 .setMapSize(10_485_760_00)
-                .setMaxDbs(3)
+                .setMaxDbs(6)
                 .setMaxReaders(2)
                 .open(lmdbCamelCaseSearchPath.toFile());
         envs.add(camelCaseEnv);
-        final var camelCaseIndex = new CamelCaseIndex(camelCaseEnv, symbolCache, pathCache);
+        final var cacheEnv = Env.create()
+                .setMapSize(10_485_760_00)
+                .setMaxDbs(3)
+                .setMaxReaders(1)
+                .open(lmdbCachePath.toFile());
+        envs.add(cacheEnv);
+        final var camelCaseIndex = new CamelCaseIndex(this, camelCaseEnv, symbolCache, pathCache, cacheEnv);
         indexes.put(CamelCaseIndex.class, camelCaseIndex);
         return camelCaseIndex;
     }

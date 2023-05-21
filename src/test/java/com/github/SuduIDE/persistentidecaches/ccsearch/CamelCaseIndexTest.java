@@ -67,7 +67,7 @@ class CamelCaseIndexTest {
                 """;
         Assertions.assertEquals(CamelCaseIndex.getSymbolsFromString(javaAClass), new Symbols(
                 List.of("HashResultsHandler"),
-                List.of("ERROR_HASH_HEX", "writer"),
+                List.of(/*"ERROR_HASH_HEX", */"writer"),
                 List.of("processSuccess", "processError", "processResult", "close")
         ));
     }
