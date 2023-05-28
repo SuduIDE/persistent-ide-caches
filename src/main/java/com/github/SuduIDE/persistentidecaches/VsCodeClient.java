@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class VsCodeClient {
 
@@ -22,7 +23,13 @@ public class VsCodeClient {
     public static final int BUSY_WAITING_MILLIS = 500;
     public static final String CHECKOUT = "checkout";
     public static final String CCSEARCH = "ccsearch";
+    public static final int BUCKET_SIZE = 10;
+    public static final String NEXT = "next";
+    public static final String PREV = "prev";
     private static final char[] BUFFER = new char[16384];
+    private static List<String> returned;
+    private static int currentPos;
+    private static long time;
 
     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
     public static void main(final String[] args) throws IOException, InterruptedException {
@@ -82,31 +89,57 @@ public class VsCodeClient {
                     }
                     case SEARCH -> {
                         final var read = scanner.read(BUFFER);
-                        line = new String(BUFFER, 0, read);
-                        System.out.println(trigramIndexUtils.filesForString(line)
-                                .stream()
-                                .map(Path::toString)
-                                .collect(Collectors.joining("\n")));
+                        final var l = new String(BUFFER, 0, read);
+                        currentPos = 0;
+                        checkTime(() ->
+                                returned = trigramIndexUtils.filesForString(l)
+                                        .stream()
+                                        .map(Path::toString).toList());
+                        sendCurrentBucket();
                     }
                     case CHECKOUT -> {
                         final var read = scanner.read(BUFFER);
-                        line = new String(BUFFER, 0, read);
-                        manager.checkoutToGitRevision(line);
-                        System.out.println("Checkouted to " + line + ". Current revision " +
-                                manager.getRevisions().getCurrentRevision().revision());
+                        final var l = new String(BUFFER, 0, read);
+                        checkTime(() -> manager.checkoutToGitRevision(l));
+                        System.out.println(time);
                     }
                     case CCSEARCH -> {
                         final var read = scanner.read(BUFFER);
-                        line = new String(BUFFER, 0, read);
-                        System.out.println(
-                                camelCaseSearchUtils.getSymbolsFromAny(line).stream()
+                        final var l = new String(BUFFER, 0, read);
+                        checkTime(() -> returned =
+                                camelCaseSearchUtils.getSymbolsFromAny(l).stream()
                                         .map(it -> it.name() + " " +
                                                 manager.getFileCache().getObject(it.pathNum()).getFileName().toString())
-                                        .collect(Collectors.joining("\n")));
+                                        .toList());
+                        currentPos = 0;
+                        sendCurrentBucket();
+                    }
+                    case NEXT -> {
+                        currentPos += BUCKET_SIZE;
+                        System.err.println("Next " + currentPos + " of " + returned.size());
+                        sendCurrentBucket();
+                    }
+                    case PREV -> {
+                        currentPos -= BUCKET_SIZE;
+                        System.err.println("Prev " + currentPos + " of " + returned.size());
+                        sendCurrentBucket();
                     }
                 }
             }
         }
+    }
+
+    private static void checkTime(final Runnable runnable) {
+        final long start = System.nanoTime();
+        runnable.run();
+        time = (System.nanoTime() - start) / 1_000_000;
+    }
+
+    private static void sendCurrentBucket() {
+        System.out.println(
+                Stream.concat(Stream.of(returned.size(), time).map(Object::toString),
+                                returned.subList(currentPos, Math.min(currentPos + BUCKET_SIZE, returned.size())).stream())
+                        .collect(Collectors.joining("\n")));
     }
 
     private record ModifyChangeFromJSON(String uri, String oldText, String newText) {
