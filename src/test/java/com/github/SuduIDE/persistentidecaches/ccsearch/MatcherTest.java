@@ -38,6 +38,7 @@ class MatcherTest {
 
     @Test
     public void testSimpleCases() {
+        assertMatches("visit", "visitFile");
         assertMatches("N", "NameUtilTest");
         assertMatches("NU", "NameUtilTest");
         assertMatches("NUT", "NameUtilTest");

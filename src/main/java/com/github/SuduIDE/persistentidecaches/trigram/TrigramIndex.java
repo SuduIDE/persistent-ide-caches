@@ -87,11 +87,11 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
             while (!currentRevision.equals(targetRevision)) {
                 if (currentRevision.revision() > targetRevision.revision()) {
                     cache.processDataCluster(currentRevision,
-                            (bytes, file, d) -> counter.decreaseIt(txn, bytes, file, d));
+                            (bytes, file, d) -> counter.addIt(txn, bytes, file, d));
                     currentRevision = revisions.getParent(currentRevision);
                 } else {
                     cache.processDataCluster(targetRevision,
-                            (bytes, file, d) -> counter.addIt(txn, bytes, file, d));
+                            (bytes, file, d) -> counter.decreaseIt(txn, bytes, file, d));
                     targetRevision = revisions.getParent(targetRevision);
                 }
 //                counter.add(txn, deltasList);

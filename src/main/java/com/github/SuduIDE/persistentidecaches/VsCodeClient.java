@@ -1,6 +1,7 @@
 package com.github.SuduIDE.persistentidecaches;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.SuduIDE.persistentidecaches.ccsearch.Matcher;
 import com.github.SuduIDE.persistentidecaches.changes.AddChange;
 import com.github.SuduIDE.persistentidecaches.changes.Change;
 import com.github.SuduIDE.persistentidecaches.changes.DeleteChange;
@@ -12,7 +13,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -58,30 +62,30 @@ public class VsCodeClient {
                         for (final ModifyChangeFromJSON modifyChangeFromJSON : changes.modifyChanges) {
                             final Path path = repPath.relativize(Path.of(modifyChangeFromJSON.uri));
                             final ModifyChange modifyChange = new ModifyChange(changes.timestamp,
-                                    () -> modifyChangeFromJSON.oldText,
-                                    () -> modifyChangeFromJSON.newText,
-                                    path,
-                                    path);
+                                () -> modifyChangeFromJSON.oldText,
+                                () -> modifyChangeFromJSON.newText,
+                                path,
+                                path);
                             processedChangesList.add(modifyChange);
                         }
                         for (final CreateFileChangeFromJSON createFileChangeFromJSON : changes.addChanges) {
                             final AddChange addChange = new AddChange(changes.timestamp,
-                                    new FilePointer(repPath.relativize(Path.of(createFileChangeFromJSON.uri)), 0),
-                                    createFileChangeFromJSON.text);
+                                new FilePointer(repPath.relativize(Path.of(createFileChangeFromJSON.uri)), 0),
+                                createFileChangeFromJSON.text);
                             processedChangesList.add(addChange);
                         }
                         for (final DeleteFileChangeFromJSON deleteFileChangeFromJSON : changes.deleteChanges) {
                             final DeleteChange deleteChange = new DeleteChange(changes.timestamp,
-                                    new FilePointer(repPath.relativize(Path.of(deleteFileChangeFromJSON.uri)), 0),
-                                    deleteFileChangeFromJSON.text);
+                                new FilePointer(repPath.relativize(Path.of(deleteFileChangeFromJSON.uri)), 0),
+                                deleteFileChangeFromJSON.text);
                             processedChangesList.add(deleteChange);
                         }
                         for (final RenameFileChangeFromJSON renameFileChangeFromJSON : changes.renameChanges) {
                             final RenameChange renameChange = new RenameChange(changes.timestamp,
-                                    () -> renameFileChangeFromJSON.text,
-                                    () -> renameFileChangeFromJSON.text,
-                                    repPath.relativize(Path.of(renameFileChangeFromJSON.oldUri)),
-                                    repPath.relativize(Path.of(renameFileChangeFromJSON.newUri)));
+                                () -> renameFileChangeFromJSON.text,
+                                () -> renameFileChangeFromJSON.text,
+                                repPath.relativize(Path.of(renameFileChangeFromJSON.oldUri)),
+                                repPath.relativize(Path.of(renameFileChangeFromJSON.newUri)));
                             processedChangesList.add(renameChange);
                         }
                         manager.nextRevision();
@@ -92,9 +96,10 @@ public class VsCodeClient {
                         final var l = new String(BUFFER, 0, read);
                         currentPos = 0;
                         checkTime(() ->
-                                returned = trigramIndexUtils.filesForString(l)
-                                        .stream()
-                                        .map(Path::toString).toList());
+                            returned = trigramIndexUtils.filesForString(l)
+                                .stream()
+                                .map(Path::toString)
+                                .toList());
                         sendCurrentBucket();
                     }
                     case CHECKOUT -> {
@@ -105,12 +110,16 @@ public class VsCodeClient {
                     }
                     case CCSEARCH -> {
                         final var read = scanner.read(BUFFER);
-                        final var l = new String(BUFFER, 0, read);
+                        final var req = new String(BUFFER, 0, read);
                         checkTime(() -> returned =
-                                camelCaseSearchUtils.getSymbolsFromAny(l).stream()
-                                        .map(it -> it.name() + " " +
-                                                manager.getFileCache().getObject(it.pathNum()).getFileName().toString())
-                                        .toList());
+                            camelCaseSearchUtils.getSymbolsFromAny(req).stream()
+                                .map(it -> Stream.of(Stream.of(it.name()),
+                                        Stream.of(manager.getFileCache().getObject(it.pathNum())),
+                                        Arrays.stream(Matcher.letters(req, it.name())).mapToObj(Integer::toString))
+                                    .flatMap(Function.identity())
+                                    .map(Objects::toString)
+                                    .collect(Collectors.joining(" ")))
+                                .toList());
                         currentPos = 0;
                         sendCurrentBucket();
                     }
@@ -137,9 +146,9 @@ public class VsCodeClient {
 
     private static void sendCurrentBucket() {
         System.out.println(
-                Stream.concat(Stream.of(returned.size(), time).map(Object::toString),
-                                returned.subList(currentPos, Math.min(currentPos + BUCKET_SIZE, returned.size())).stream())
-                        .collect(Collectors.joining("\n")));
+            Stream.concat(Stream.of(returned.size(), time).map(Object::toString),
+                    returned.subList(currentPos, Math.min(currentPos + BUCKET_SIZE, returned.size())).stream())
+                .collect(Collectors.joining("\n")));
     }
 
     private record ModifyChangeFromJSON(String uri, String oldText, String newText) {

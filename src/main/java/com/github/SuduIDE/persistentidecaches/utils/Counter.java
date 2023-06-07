@@ -37,7 +37,7 @@ public class Counter<Key> {
     }
 
     public void add(final Key key, final int value) {
-        counter.compute(key, (k, v) -> v == null ? value : v + value);
+        counter.merge(key, value, Integer::sum);
     }
 
     public void decrease(final Key key, final int value) {
