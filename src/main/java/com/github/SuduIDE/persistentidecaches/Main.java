@@ -18,7 +18,7 @@ public class Main {
         if (args.length < 1) {
             throw new RuntimeException("Needs path to repository as first arg");
         }
-        try (final IndexesManager manager = new IndexesManager(true)) {
+        try (final IndexesManager manager = new IndexesManager(false)) {
             final var trigramHistoryIndex = manager.addTrigramIndex();
             final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
 //            final var camelCaseIndex = manager.addCamelCaseIndex();

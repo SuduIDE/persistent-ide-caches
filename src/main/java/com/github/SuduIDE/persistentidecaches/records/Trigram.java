@@ -1,7 +1,6 @@
 package com.github.SuduIDE.persistentidecaches.records;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 public record Trigram(byte[] trigram) implements Comparable<Trigram> {
 
@@ -40,11 +39,6 @@ public record Trigram(byte[] trigram) implements Comparable<Trigram> {
         }
         final Trigram trigram1 = (Trigram) o;
         return Arrays.equals(trigram, trigram1.trigram);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(trigram[0], trigram[1], trigram[2]);
     }
 
     @Override

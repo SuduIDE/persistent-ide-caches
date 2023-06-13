@@ -143,10 +143,10 @@ public class GitParser {
                     indexesManager.getRevisions().addRevision(
                             indexesManager.getRevisions().getCurrentRevision()));
             gitCommits2Revisions.put(commit.getName(), indexesManager.getRevisions().getCurrentRevision().revision());
+            indexesManager.applyChanges(changes);
         } else {
-            indexesManager.getRevisions().setCurrentRevision(new Revision(rev));
+            indexesManager.checkout(new Revision(rev));
         }
-        indexesManager.applyChanges(changes);
     }
 
     private void parseCommit(final RevCommit commit, final RevCommit prevCommit) throws IOException, GitAPIException {
