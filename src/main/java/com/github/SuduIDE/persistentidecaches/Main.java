@@ -21,8 +21,8 @@ public class Main {
         try (final IndexesManager manager = new IndexesManager(true)) {
             final var trigramHistoryIndex = manager.addTrigramIndex();
             final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
-            final var camelCaseIndex = manager.addCamelCaseIndex();
-            final var camelCaseIndexUtils = camelCaseIndex.getUtils();
+//            final var camelCaseIndex = manager.addCamelCaseIndex();
+//            final var camelCaseIndexUtils = camelCaseIndex.getUtils();
 //            final int LIMIT = 10;
             final var sizeCounterIndex = manager.addSizeCounterIndex();
             final int LIMIT = Integer.MAX_VALUE;
@@ -35,20 +35,20 @@ public class Main {
 //            symbols.forEach((symbol, integer) -> System.out.println(symbol + " " + integer));
 //            trigramHistoryIndex.getCounter()
 //                    .forEach((tri, file, i) -> {
-//                        if (file.toString().contains("ArraySet")) {
-//                            System.out.println(tri.toPrettyString() + " " + file + " " + i);
-//                        }
+////                        if (file.toString().contains("ArraySet")) {
+//                            System.out.println(tri.toPrettyString().replace("\n", "\\n") + " " + file + " " + i);
+////                        }
 //                    });
 //            System.out.println(SEPARATOR);
 //            trigramIndexUtils.filesForString("ArraySet").forEach(System.out::println);
 //          спецэффект camelCaseIndexUtils.getSymbolsFromAny("create") -> LocalRemoteThreadsTest
 //          спецэффект camelCaseIndexUtils.getSymbolsFromAny("crea") -> streamMapReduceReduce
-            System.out.println(SEPARATOR);
-            camelCaseIndexUtils.getSymbolsFromAny("ArrSe").forEach(System.out::println);
-            System.out.println(SEPARATOR);
-            camelCaseIndexUtils.getSymbolsFromAny("Impl").forEach(System.out::println);
-            System.out.println(SEPARATOR);
-            camelCaseIndexUtils.getSymbolsFromAny("HFVis").forEach(System.out::println);
+//            System.out.println(SEPARATOR);
+//            camelCaseIndexUtils.getSymbolsFromAny("ArrSe").forEach(System.out::println);
+//            System.out.println(SEPARATOR);
+//            camelCaseIndexUtils.getSymbolsFromAny("Impl").forEach(System.out::println);
+//            System.out.println(SEPARATOR);
+//            camelCaseIndexUtils.getSymbolsFromAny("HFVis").forEach(System.out::println);
 //            System.out.println("Current revision: " + manager.getRevisions().getCurrentRevision());
 ////            trigramHistoryIndex.getCounter().forEach((tri, file, i) -> System.out.println(tri + " " + file + " " + i));
 //            benchmark(() -> manager.checkoutToGitRevision("a12b6970620c5b83df8d786630e9372c8f56daba"));

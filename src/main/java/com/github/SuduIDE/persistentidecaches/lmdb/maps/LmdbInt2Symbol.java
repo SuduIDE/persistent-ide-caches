@@ -10,7 +10,7 @@ import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 
-public class LmdbInt2Symbol extends LmdbAbstractMap implements LmdbInt2Obj<Symbol> {
+public class LmdbInt2Symbol extends LmdbAbstractInt2Smth implements LmdbInt2Obj<Symbol> {
 
     public LmdbInt2Symbol(final Env<ByteBuffer> env, final String dbName) {
         super(env, env.openDbi(dbName, DbiFlags.MDB_CREATE, DbiFlags.MDB_INTEGERKEY));
@@ -19,7 +19,7 @@ public class LmdbInt2Symbol extends LmdbAbstractMap implements LmdbInt2Obj<Symbo
     @Override
     public void put(final int key, final Symbol value) {
         final var nameBytes = value.name().getBytes();
-        putImpl(allocateInt(key),
+        putImpl(getKey(key),
                 ByteBuffer.allocateDirect(nameBytes.length + Integer.BYTES)
                         .putInt(value.pathNum())
                         .put(nameBytes)
@@ -28,7 +28,7 @@ public class LmdbInt2Symbol extends LmdbAbstractMap implements LmdbInt2Obj<Symbo
 
     @Override
     public Symbol get(final int key) {
-        final ByteBuffer res = getImpl(allocateInt(key));
+        final ByteBuffer res = getImpl(getKey(key));
         if (res == null) {
             return null;
         }

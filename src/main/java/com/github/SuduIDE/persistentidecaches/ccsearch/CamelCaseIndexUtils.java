@@ -48,6 +48,7 @@ public class CamelCaseIndexUtils {
         return fileSet.stream()
                 .map(it -> Pair.of(it, Matcher.match(request, it.name())))
                 .sorted(Comparator.comparing((Pair<Symbol, Integer> pair) -> pair.getRight()).reversed())
+                .filter(it -> it.getRight() > Matcher.NEG_INF)
                 .map(Pair::getLeft)
                 .toList();
     }

@@ -9,7 +9,7 @@ import org.lmdbjava.Env;
 import org.lmdbjava.KeyRange;
 import org.lmdbjava.Txn;
 
-public class LmdbInt2String extends LmdbAbstractMap implements LmdbInt2Obj<String> {
+public class LmdbInt2String extends LmdbAbstractInt2Smth implements LmdbInt2Obj<String> {
 
     public LmdbInt2String(final Env<ByteBuffer> env, final String dbName) {
         super(env, env.openDbi(dbName, DbiFlags.MDB_CREATE, DbiFlags.MDB_INTEGERKEY));
@@ -17,7 +17,7 @@ public class LmdbInt2String extends LmdbAbstractMap implements LmdbInt2Obj<Strin
 
     public void put(final int key, final String value) {
         final ByteBuffer valueBytes = ByteBuffer.wrap(value.getBytes());
-        putImpl(allocateInt(key),
+        putImpl(getKey(key),
                 allocateString(value));
     }
 
@@ -25,7 +25,7 @@ public class LmdbInt2String extends LmdbAbstractMap implements LmdbInt2Obj<Strin
      * @return value for key or null
      */
     public String get(final int key) {
-        final ByteBuffer res = getImpl(allocateInt(key));
+        final ByteBuffer res = getImpl(getKey(key));
         return res == null ? null : String.valueOf(StandardCharsets.UTF_8.decode(res));
     }
 
