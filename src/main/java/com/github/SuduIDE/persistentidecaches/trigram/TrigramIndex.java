@@ -107,10 +107,11 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
         final var delta = new TrigramFileCounter();
         changes.forEach(it -> countChange(it, delta));
         final var filteredDelta = new TrigramFileCounter(delta.getAsMap().entrySet().stream()
+                .filter(it -> it.getValue() != 0)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
         counter.add(filteredDelta);
         if (!changes.isEmpty()) {
-            pushActions(delta, changes.get(0).getTimestamp());
+            pushActions(filteredDelta, changes.get(0).getTimestamp());
         }
     }
 

@@ -150,7 +150,7 @@ public class IndexesManager implements AutoCloseable {
 
     public TrigramIndex addTrigramIndex() {
         final var trigramEnv = Env.create()
-                .setMapSize(10_485_760_00)
+                .setMapSize(10_485_760_000L)
                 .setMaxDbs(3)
                 .setMaxReaders(2)
                 .open(lmdbTrigramPath.toFile());
