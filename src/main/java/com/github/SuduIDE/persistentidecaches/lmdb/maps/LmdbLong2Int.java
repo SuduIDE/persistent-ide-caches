@@ -6,8 +6,8 @@ import org.lmdbjava.Env;
 
 public class LmdbLong2Int extends LmdbAbstractMap {
 
-    private final ByteBuffer keyBuffer;
-    private final ByteBuffer valueBuffer;
+    protected final ByteBuffer keyBuffer;
+    protected final ByteBuffer valueBuffer;
 
     public LmdbLong2Int(final Env<ByteBuffer> env, final String dbName) {
         super(env, env.openDbi(dbName, DbiFlags.MDB_CREATE));

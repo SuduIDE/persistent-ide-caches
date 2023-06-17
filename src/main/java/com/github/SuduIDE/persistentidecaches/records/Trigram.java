@@ -42,6 +42,10 @@ public record Trigram(byte[] trigram) implements Comparable<Trigram> {
     }
 
     @Override
+    public int hashCode() {
+        return toInt() * 31 + 25;
+    }
+    @Override
     public int compareTo(final Trigram o) {
         return Integer.compare(toInt(trigram), toInt(o.trigram));
     }

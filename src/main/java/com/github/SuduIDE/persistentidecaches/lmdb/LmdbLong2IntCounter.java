@@ -18,7 +18,7 @@ public class LmdbLong2IntCounter extends LmdbLong2Int {
 
 
     public int countGet(final long key) {
-        final ByteBuffer res = getImpl(allocateLong(key));
+        final ByteBuffer res = getImpl(getKey(key));
         return res == null ? 0 : res.getInt();
     }
 
@@ -41,10 +41,10 @@ public class LmdbLong2IntCounter extends LmdbLong2Int {
     }
 
     public void add(final Txn<ByteBuffer> txn, final long key, final int delta) {
-        final var keyBytes = allocateLong(key);
+        final var keyBytes = getKey(key);
         final var found = db.get(txn, keyBytes);
         final var val = found == null ? 0 : txn.val().getInt();
-        db.put(txn, keyBytes, allocateInt(val + delta));
+        db.put(txn, keyBytes, getValue(val + delta));
     }
 
     public void decrease(final Txn<ByteBuffer> txn, final long key, final int delta) {

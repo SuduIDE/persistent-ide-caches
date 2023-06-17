@@ -182,7 +182,7 @@ public class IndexesManager implements AutoCloseable {
             final var parser = new GitParser(git, this,
                     lmdbSha12Int,
                     LIMIT);
-            parser.parseHead();
+            parser.parseAll();
             checkoutToGitRevision(parser.getHead());
         } catch (final IOException ioException) {
             throw new RuntimeException(ioException);

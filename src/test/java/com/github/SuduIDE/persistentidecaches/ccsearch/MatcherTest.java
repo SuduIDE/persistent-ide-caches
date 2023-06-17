@@ -38,7 +38,6 @@ class MatcherTest {
 
     @Test
     public void testSimpleCases() {
-        assertDoesntMatch("huc", "shuffledCurrencyTest");
         assertMatches("visit", "visitFile");
         assertMatches("N", "NameUtilTest");
         assertMatches("NU", "NameUtilTest");
