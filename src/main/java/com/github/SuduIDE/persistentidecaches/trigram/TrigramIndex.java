@@ -16,9 +16,8 @@ import com.github.SuduIDE.persistentidecaches.records.TrigramFile;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.lmdbjava.Env;
 
@@ -106,12 +105,15 @@ public class TrigramIndex implements Index<TrigramFile, Integer> {
     public void process(final List<? extends Change> changes) {
         final var delta = new TrigramFileCounter();
         changes.forEach(it -> countChange(it, delta));
-        final var filteredDelta = new TrigramFileCounter(delta.getAsMap().entrySet().stream()
-            .filter(it -> it.getValue() != 0)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-        counter.add(filteredDelta);
+
+        delta.getAsMap().entrySet().stream()
+            .filter(it -> it.getValue() == 0)
+            .map(Entry::getKey)
+            .toList()
+            .forEach(it -> delta.getAsMap().remove(it))         ;
+        counter.add(delta);
         if (!changes.isEmpty()) {
-            pushActions(filteredDelta, changes.get(0).getTimestamp());
+            pushActions(delta, changes.get(0).getTimestamp());
         }
     }
 

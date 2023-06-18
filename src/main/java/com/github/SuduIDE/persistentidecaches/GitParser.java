@@ -51,7 +51,8 @@ public class GitParser {
         this(git, indexesManager, gitCommits2Revisions, Integer.MAX_VALUE);
     }
 
-    public GitParser(final Git git, final IndexesManager indexesManager, final LmdbSha12Int gitCommits2Revisions, final int commitsLimit) {
+    public GitParser(final Git git, final IndexesManager indexesManager, final LmdbSha12Int gitCommits2Revisions,
+        final int commitsLimit) {
         repository = git.getRepository();
         this.indexesManager = indexesManager;
         this.commitsLimit = commitsLimit;
@@ -78,6 +79,7 @@ public class GitParser {
             return walk.parseCommit(repository.resolve(Constants.HEAD)).getName();
         }
     }
+
     private void parseOne(final ObjectId head) {
         LOG.info("Parsing ref: " + head.getName());
         try (final RevWalk walk = new RevWalk(repository)) {
@@ -140,8 +142,8 @@ public class GitParser {
         final int rev = gitCommits2Revisions.get(commit.getName());
         if (rev == -1) {
             indexesManager.getRevisions().setCurrentRevision(
-                    indexesManager.getRevisions().addRevision(
-                            indexesManager.getRevisions().getCurrentRevision()));
+                indexesManager.getRevisions().addRevision(
+                    indexesManager.getRevisions().getCurrentRevision()));
             gitCommits2Revisions.put(commit.getName(), indexesManager.getRevisions().getCurrentRevision().revision());
             indexesManager.applyChanges(changes);
         } else {
@@ -158,16 +160,16 @@ public class GitParser {
             tw.setRecursive(true);
             final var rawChanges = DiffEntry.scan(tw);
             sendChanges(rawChanges.stream()
-                            .map(it -> {
-                                try {
-                                    return processDiff(it);
-                                } catch (final IOException e) {
-                                    throw new RuntimeException(e);
-                                }
-                            })
-                            .flatMap(List::stream)
-                            .collect(Collectors.toList()),
-                    commit
+                    .map(it -> {
+                        try {
+                            return processDiff(it);
+                        } catch (final IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList()),
+                commit
             );
         }
     }
@@ -185,34 +187,34 @@ public class GitParser {
     List<Change> processDiff(final DiffEntry diffEntry) throws IOException {
         return switch (diffEntry.getChangeType()) {
             case ADD -> List.of(new AddChange(System.currentTimeMillis(),
-                    new FilePointer(Path.of(diffEntry.getNewPath()), 0),
-                    new String(repository.open(diffEntry.getNewId().toObjectId()).getBytes()))
+                new FilePointer(Path.of(diffEntry.getNewPath()), 0),
+                new String(repository.open(diffEntry.getNewId().toObjectId()).getBytes()))
             );
             case MODIFY -> List.of(
-                    new ModifyChange(System.currentTimeMillis(),
-                            fileGetter(diffEntry.getOldId()),
-                            fileGetter(diffEntry.getNewId()),
-                            Path.of(diffEntry.getOldPath()),
-                            Path.of(diffEntry.getNewPath())
-                    ));
+                new ModifyChange(System.currentTimeMillis(),
+                    fileGetter(diffEntry.getOldId()),
+                    fileGetter(diffEntry.getNewId()),
+                    Path.of(diffEntry.getOldPath()),
+                    Path.of(diffEntry.getNewPath())
+                ));
             case DELETE -> List.of(
-                    new DeleteChange(System.currentTimeMillis(),
-                            new FilePointer(Path.of(diffEntry.getOldPath()), 0),
-                            new String(repository.open(diffEntry.getOldId().toObjectId()).getBytes())));
+                new DeleteChange(System.currentTimeMillis(),
+                    new FilePointer(Path.of(diffEntry.getOldPath()), 0),
+                    new String(repository.open(diffEntry.getOldId().toObjectId()).getBytes())));
             case RENAME -> List.of(
-                    new RenameChange(System.currentTimeMillis(),
-                            fileGetter(diffEntry.getOldId()),
-                            fileGetter(diffEntry.getNewId()),
-                            Path.of(diffEntry.getOldPath()),
-                            Path.of(diffEntry.getNewPath())
-                    ));
+                new RenameChange(System.currentTimeMillis(),
+                    fileGetter(diffEntry.getOldId()),
+                    fileGetter(diffEntry.getNewId()),
+                    Path.of(diffEntry.getOldPath()),
+                    Path.of(diffEntry.getNewPath())
+                ));
             case COPY -> List.of(
-                    new CopyChange(System.currentTimeMillis(),
-                            fileGetter(diffEntry.getOldId()),
-                            fileGetter(diffEntry.getNewId()),
-                            Path.of(diffEntry.getOldPath()),
-                            Path.of(diffEntry.getNewPath())
-                    ));
+                new CopyChange(System.currentTimeMillis(),
+                    fileGetter(diffEntry.getOldId()),
+                    fileGetter(diffEntry.getNewId()),
+                    Path.of(diffEntry.getOldPath()),
+                    Path.of(diffEntry.getNewPath())
+                ));
         };
     }
 
@@ -229,8 +231,8 @@ public class GitParser {
             treeWalk.setRecursive(true);
             while (treeWalk.next()) {
                 changes.add(new AddChange(System.currentTimeMillis(),
-                        new FilePointer(Path.of(treeWalk.getPathString()), 0),
-                        new String(repository.open(treeWalk.getObjectId(0)).getBytes()))
+                    new FilePointer(Path.of(treeWalk.getPathString()), 0),
+                    new String(repository.open(treeWalk.getObjectId(0)).getBytes()))
                 );
             }
         } catch (final IOException e) {
