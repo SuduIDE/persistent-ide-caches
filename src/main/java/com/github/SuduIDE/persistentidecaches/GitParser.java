@@ -66,7 +66,7 @@ public class GitParser {
         int cnt = 0;
         for (final Ref ref : refs) {
             parseOne(ref.getObjectId());
-            System.err.println("Parsed " + (++cnt) + "/" + refs.size() + " refs");
+            System.err.println("Parsed " + ref.getName() + " " + (++cnt) + "/" + refs.size() + " refs");
         }
     }
 
@@ -101,13 +101,11 @@ public class GitParser {
             LOG.info(String.format("%d commits found to process", commits.size()));
 
             if (firstCommit == null) {
-                indexesManager.getRevisions().setCurrentRevision(Revision.NULL);
                 indexesManager.checkout(Revision.NULL);
                 firstCommit = commits.removeLast();
                 parseFirstCommit(firstCommit);
             } else {
                 final var rev = new Revision(gitCommits2Revisions.get(firstCommit.getName()));
-                indexesManager.getRevisions().setCurrentRevision(rev);
                 indexesManager.checkout(rev);
             }
             var prevCommit = firstCommit;
