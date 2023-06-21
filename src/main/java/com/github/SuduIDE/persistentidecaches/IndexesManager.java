@@ -173,19 +173,31 @@ public class IndexesManager implements AutoCloseable {
     }
 
     public void parseGitRepository(final Path pathToRepository) {
-        parseGitRepository(pathToRepository, Integer.MAX_VALUE);
+        parseGitRepository(pathToRepository, true);
     }
 
-    public void parseGitRepository(final Path pathToRepository, final int LIMIT) {
+    public void parseGitRepository(final Path pathToRepository, final int limit) {
+        parseGitRepository(pathToRepository, limit, true);
+    }
+    public void parseGitRepository(final Path pathToRepository, final boolean parseOnlyHead) {
+        parseGitRepository(pathToRepository, Integer.MAX_VALUE, true);
+    }
+
+    public void parseGitRepository(final Path pathToRepository, final int limit, final boolean parseOnlyHead) {
         try (final Git git = Git.open(pathToRepository.toFile())) {
             lmdbSha12Int = new LmdbSha12Int(globalEnv, "git_commits_to_revision");
             final var parser = new GitParser(git, this,
                     lmdbSha12Int,
-                    LIMIT);
+                    limit);
             if (revisions.getCurrentRevision().equals(Revision.NULL)) {
-                parser.parseHead();
+                if (parseOnlyHead) {
+                    parser.parseHead();
+                } else {
+                    parser.parseAll();
+                }
                 checkoutToGitRevision(parser.getHead());
             }
+            System.err.println("Parsed");
         } catch (final IOException ioException) {
             throw new RuntimeException(ioException);
         }

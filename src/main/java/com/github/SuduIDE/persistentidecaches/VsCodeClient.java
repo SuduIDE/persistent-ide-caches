@@ -1,6 +1,8 @@
 package com.github.SuduIDE.persistentidecaches;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.SuduIDE.persistentidecaches.ccsearch.CamelCaseIndex;
+import com.github.SuduIDE.persistentidecaches.ccsearch.CamelCaseIndexUtils;
 import com.github.SuduIDE.persistentidecaches.ccsearch.Matcher;
 import com.github.SuduIDE.persistentidecaches.changes.AddChange;
 import com.github.SuduIDE.persistentidecaches.changes.Change;
@@ -8,6 +10,8 @@ import com.github.SuduIDE.persistentidecaches.changes.DeleteChange;
 import com.github.SuduIDE.persistentidecaches.changes.ModifyChange;
 import com.github.SuduIDE.persistentidecaches.changes.RenameChange;
 import com.github.SuduIDE.persistentidecaches.records.FilePointer;
+import com.github.SuduIDE.persistentidecaches.trigram.TrigramIndex;
+import com.github.SuduIDE.persistentidecaches.trigram.TrigramIndexUtils;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -35,18 +39,45 @@ public class VsCodeClient {
     private static int currentPos;
     private static long time;
 
+    private static void printUsage() {
+        System.err.println("""
+            Usage:
+            java VsCodeClient path_to_repository reset_db parseAll/parseHead trigram_index camel_case_index
+            
+            path_to_repository -- absolute path to repository
+            reset_db -- true/false to reset databases
+            parseAll/parseHead -- "parseAll" or "parseHead" to parse all refs or only HEAD
+            trigram_index  -- true/false to enable trigram index
+            camel_case_index  -- true/false to enable camel case index
+            """
+        );
+    }
+
     @SuppressWarnings({"BusyWait", "InfiniteLoopStatement"})
     public static void main(final String[] args) throws IOException, InterruptedException {
-        if (args.length < 1) {
-            System.err.println("Needs path to repository as first arg");
+        if (args.length != 5) {
+            System.err.println("Wrong usage");
+            printUsage();
         }
-        try (final IndexesManager manager = new IndexesManager(args.length <= 1)) {
-            final var trigramHistoryIndex = manager.addTrigramIndex();
-            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
-            final var camelCaseSearch = manager.addCamelCaseIndex();
-            final var camelCaseSearchUtils = camelCaseSearch.getUtils();
+        try (final IndexesManager manager = new IndexesManager(args[1].equals("true"))) {
+            TrigramIndex trigramHistoryIndex = null;
+            final TrigramIndexUtils trigramIndexUtils;
+            CamelCaseIndex camelCaseSearch = null;
+            final CamelCaseIndexUtils camelCaseSearchUtils;
+            if (args[3].equals("true")) {
+                trigramHistoryIndex = manager.addTrigramIndex();
+                trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
+            } else {
+                trigramIndexUtils = null;
+            }
+            if (args[4].equals("true")) {
+                camelCaseSearch = manager.addCamelCaseIndex();
+                camelCaseSearchUtils = camelCaseSearch.getUtils();
+            } else {
+                camelCaseSearchUtils = null;
+            }
             final var repPath = Path.of(args[0]);
-            manager.parseGitRepository(repPath);
+            manager.parseGitRepository(repPath, args[3].equals("parseHead"));
 
             final ObjectMapper objectMapper = new ObjectMapper();
             final BufferedReader scanner = new BufferedReader(new InputStreamReader(System.in));

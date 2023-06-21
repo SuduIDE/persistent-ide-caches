@@ -2,7 +2,6 @@ package com.github.SuduIDE.persistentidecaches;
 
 
 import com.github.SuduIDE.persistentidecaches.records.Revision;
-import com.github.SuduIDE.persistentidecaches.records.Trigram;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -10,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Main {
 
@@ -26,23 +26,29 @@ public class Main {
             throw new RuntimeException("Needs path to repository as first arg");
         }
         try (final IndexesManager manager = new IndexesManager(true)) {
-            final var trigramHistoryIndex = manager.addTrigramIndex();
-            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
-//            final var camelCaseIndex = manager.addCamelCaseIndex();
-//            final var camelCaseIndexUtils = camelCaseIndex.getUtils();
+//            final var trigramHistoryIndex = manager.addTrigramIndex();
+//            final var trigramIndexUtils = trigramHistoryIndex.getTrigramIndexUtils();
+            final var camelCaseIndex = manager.addCamelCaseIndex();
+            final var camelCaseIndexUtils = camelCaseIndex.getUtils();
 //            final int LIMIT = 10;
             final var sizeCounterIndex = manager.addSizeCounterIndex();
             final int LIMIT = Integer.MAX_VALUE;
             benchmark(() -> manager.parseGitRepository(Path.of(args[0]), LIMIT));
 
             System.out.println("Sum size " + sizeCounterIndex.getSummarySize() + " bytes");
-            final Map<Trigram, Integer> map = new HashMap<>();
-            trigramHistoryIndex.getCounter().forEach(((trigram, path, integer) -> map.merge(trigram, 0, Integer::sum)));
+            final Map<String, Integer> map = new HashMap<>();
+            Stream.of(camelCaseIndex.getClassCounter(), camelCaseIndex.getMethodCounter(),
+                    camelCaseIndex.getFieldCounter())
+                .forEach(it -> it.forEach((trigram, symbol, integer) ->
+                    map.merge(trigram.toPrettyString(), integer, Integer::sum))
+                );
             try {
-                Files.writeString(Path.of("res.csv"), map.entrySet().stream()
-                    .sorted(Entry.comparingByValue())
-                    .map(it -> it.getKey().toPrettyString() + "," + it.getValue())
-                    .collect(Collectors.joining("\n")));
+                Files.writeString(
+                    Path.of("res.csv"), map.entrySet().stream()
+                        .sorted(Entry.comparingByValue())
+                        .map(it -> "\"" + it.getKey() + "\"," + it.getValue())
+                        .collect(Collectors.joining("\n"))
+                );
             } catch (final IOException e) {
                 throw new RuntimeException(e);
             }
